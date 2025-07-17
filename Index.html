@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Retro Index</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.2/p5.min.js"></script>
+  <style>
+    /* Global Styles - Emphasizing Minimalism */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Noto Sans SC', sans-serif;
+    }
+
+    body {
+      background: linear-gradient(180deg, #f8f9fa 0%, #ffffff 100%);
+      color: #212529;
+      overflow-x: hidden;
+      transition: background 0.5s ease, color 0.5s ease;
+      animation: fadeIn 1.5s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    /* Navigation Bar - Minimal and Centered with Scroll Effect */
+    nav {
+      background: transparent;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      padding: 20px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      box-shadow: none;
+      transition: background 0.3s ease, padding 0.3s ease;
+    }
+
+    nav.scrolled {
+      background: rgba(255, 255, 255, 0.8);
+      backdrop-filter: blur(10px);
+      padding: 10px 20px;
+    }
+
+    nav ul {
+      display: flex;
+      list-style: none;
+      gap: 32px;
+    }
+
+    nav a {
+      color: inherit;
+      text-decoration: none;
+      font-size: 16px;
+      font-weight: 500;
+      position: relative;
+      transition: color 0.3s ease;
+    }
+
+    nav a::after {
+      content: '';
+      position: absolute;
+      bottom: -4px;
+      left: 0;
+      width: 0;
+      height: 2px;
+      background: linear-gradient(90deg, #007bff, #00d4ff);
+      transition: width 0.3s ease;
+    }
+
+    nav a:hover::after {
+      width: 100%;
+    }
+
+    #theme-toggle {
+      background: linear-gradient(135deg, #007bff, #00d4ff);
+      color: #ffffff;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 50px;
+      cursor: pointer;
+      font-size: 14px;
+      margin-left: 32px;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    #theme-toggle:hover {
+      transform: scale(1.05);
+      box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+    }
+
+    /* Hero Section - Gradient Background, Minimal Text */
+    .hero {
+      text-align: center;
+      padding: 80px 20px;
+      background: linear-gradient(135deg, #e0f7fa 0%, #ffffff 100%);
+      color: #212529;
+      margin-bottom: 60px;
+      border-radius: 0 0 32px 32px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05);
+      transition: background 0.5s ease;
+    }
+
+    .hero h1 {
+      font-size: 42px;
+      font-weight: 700;
+      margin-bottom: 12px;
+      font-family: 'Orbitron', sans-serif;
+      background: linear-gradient(90deg, #007bff, #00d4ff);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hero p {
+      font-size: 18px;
+      max-width: 500px;
+      margin: 0 auto;
+      opacity: 0.8;
+    }
+
+    /* Game Grid - Floating Cards with Staggered Scroll Animations */
+    .game-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 40px;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 40px 20px;
+    }
+
+    .game-card {
+      background: #ffffff;
+      border-radius: 24px;
+      overflow: hidden;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.1);
+      transition: transform 0.4s ease, box-shadow 0.4s ease, opacity 0.6s ease-out, translate 0.6s ease-out;
+      text-align: center;
+      padding: 24px;
+      border: none;
+      opacity: 0;
+      transform: translateY(30px);
+      will-change: transform, opacity;
+    }
+
+    .game-card.visible {
+      opacity: 1;
+      transform: translateY(0);
+      transition-delay: calc(var(--card-index) * 0.1s);
+    }
+
+    .game-card:hover {
+      transform: translateY(-12px) scale(1.03);
+      box-shadow: 0 16px 48px rgba(0, 0, 0, 0.15);
+    }
+
+    .thumbnail-canvas {
+      width: 160px;
+      height: 160px;
+      margin: 0 auto 20px;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      transition: transform 0.4s ease, box-shadow 0.4s ease;
+    }
+
+    .game-card.visible .thumbnail-canvas {
+      transform: scale(1.05);
+      box-shadow: 0 8px 24px rgba(0, 123, 255, 0.2);
+    }
+
+    .thumbnail-canvas canvas {
+      width: 100% !important;
+      height: 100% !important;
+      display: block;
+    }
+
+    .game-card h2 {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      font-family: 'Orbitron', sans-serif;
+    }
+
+    .game-card p {
+      font-size: 14px;
+      color: #6c757d;
+      margin-bottom: 16px;
+    }
+
+    .game-card a {
+      display: inline-block;
+      background: linear-gradient(135deg, #007bff, #00d4ff);
+      color: #ffffff;
+      padding: 10px 24px;
+      border-radius: 50px;
+      text-decoration: none;
+      font-weight: 500;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .game-card a:hover {
+      transform: scale(1.05);
+      box-shadow: 0 4px 12px rgba(0, 123, 255, 0.4);
+    }
+
+    /* Dark Theme - Neon Cyan to Dark Charcoal Gradients */
+    body.dark-theme {
+      background: linear-gradient(180deg, #121212 0%, #1e1e1e 100%);
+      color: #e0e0e0;
+    }
+
+    body.dark-theme nav.scrolled {
+      background: rgba(18, 18, 18, 0.8);
+      backdrop-filter: blur(10px);
+    }
+
+    body.dark-theme nav a::after {
+      background: linear-gradient(90deg, #00f7ff, #333333);
+    }
+
+    body.dark-theme #theme-toggle {
+      background: linear-gradient(135deg, #00f7ff, #333333);
+    }
+
+    body.dark-theme #theme-toggle:hover {
+      box-shadow: 0 4px 12px rgba(0, 247, 255, 0.3);
+    }
+
+    body.dark-theme .hero {
+      background: linear-gradient(135deg, #0d1117 0%, #333333 70%);
+      box-shadow: 0 8px 24px rgba(0, 247, 255, 0.1);
+    }
+
+    body.dark-theme .hero h1 {
+      background: linear-gradient(90deg, #00f7ff, #333333);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    body.dark-theme .hero p {
+      opacity: 0.7;
+    }
+
+    body.dark-theme .game-card {
+      background: #1e1e1e;
+      box-shadow: 0 12px 32px rgba(0, 247, 255, 0.1);
+    }
+
+    body.dark-theme .game-card:hover {
+      box-shadow: 0 16px 48px rgba(0, 247, 255, 0.2);
+    }
+
+    body.dark-theme .game-card.visible .thumbnail-canvas {
+      box-shadow: 0 8px 24px rgba(0, 247, 255, 0.3);
+    }
+
+    body.dark-theme .game-card p {
+      color: #a0a0a0;
+    }
+
+    body.dark-theme .game-card a {
+      background: linear-gradient(135deg, #00f7ff, #333333);
+    }
+
+    body.dark-theme .game-card a:hover {
+      box-shadow: 0 4px 12px rgba(0, 247, 255, 0.4);
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+      .hero {
+        padding: 60px 20px;
+      }
+
+      .hero h1 {
+        font-size: 32px;
+      }
+
+      .hero p {
+        font-size: 16px;
+      }
+
+      nav ul {
+        gap: 20px;
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+
+      nav a {
+        font-size: 14px;
+      }
+
+      #theme-toggle {
+        margin-left: 0;
+        margin-top: 12px;
+      }
+
+      .game-grid {
+        grid-template-columns: 1fr;
+        gap: 32px;
+        padding: 20px;
+      }
+
+      .thumbnail-canvas {
+        width: 140px;
+        height: 140px;
+      }
+    }
+
+    /* Accessibility: Reduced Motion */
+    @media (prefers-reduced-motion: reduce) {
+      .game-card, .thumbnail-canvas, .game-card a, #theme-toggle, nav {
+        transition: none;
+      }
+      .game-card.visible {
+        transform: none;
+        opacity: 1;
+        transition-delay: 0s;
+      }
+      .game-card.visible .thumbnail-canvas {
+        transform: none;
+      }
+      nav.scrolled {
+        transition: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <nav>
+    <ul>
+      <li><a href="/index.html">Home</a></li>
+      <li><a href="/tetris.html">Tetris</a></li>
+      <li><a href="/snake.html">Snake</a></li>
+      <li><a href="/flappy.html">Flappy Bird</a></li>
+      <li><a href="/runner.html">2D Runner</a></li>
+    </ul>
+    <button id="theme-toggle">Toggle Theme</button>
+  </nav>
+
+  <section class="hero">
+    <h1>Retro Index</h1>
+    <p>Discover classic games reimagined in a modern light.</p>
+  </section>
+
+  <div class="game-grid">
+    <div class="game-card" style="--card-index: 0">
+      <div class="thumbnail-canvas" id="tetris-canvas"></div>
+      <h2>Tetris</h2>
+      <p>Stack and clear blocks strategically.</p>
+      <a href="/0.0.8/games/tetris.html">Play</a>
+    </div>
+    <div class="game-card" style="--card-index: 1">
+      <div class="thumbnail-canvas" id="snake-canvas"></div>
+      <h2>Snake</h2>
+      <p>Grow by eating, avoid collisions.</p>
+      <a href="/0.0.8/games/snake.html">Play</a>
+    </div>
+    <div class="game-card" style="--card-index: 2">
+      <div class="thumbnail-canvas" id="flappy-canvas"></div>
+      <h2>Flappy Bird</h2>
+      <p>Navigate pipes with precise flaps.</p>
+      <a href="/0.0.8/games/flappy.html">Play</a>
+    </div>
+    <div class="game-card" style="--card-index: 3">
+      <div class="thumbnail-canvas" id="runner-canvas"></div>
+      <h2>2D Runner</h2>
+      <p>Run, jump, and score endlessly.</p>
+      <a href="/0.0.8/games/runner.html">Play</a>
+    </div>
+  </div>
+
+  <script>
+    let currentTheme = 'light';
+
+    // Theme Toggle
+    document.getElementById('theme-toggle').addEventListener('click', () => {
+      document.body.classList.toggle('dark-theme');
+      currentTheme = document.body.classList.contains('dark-theme') ? 'dark' : 'light';
+    });
+
+    // Scroll Animation for Navigation
+    window.addEventListener('scroll', () => {
+      const nav = document.querySelector('nav');
+      if (window.scrollY > 100) {
+        nav.classList.add('scrolled');
+      } else {
+        nav.classList.remove('scrolled');
+      }
+    });
+
+    // Scroll Animation for Game Cards with Stagger
+    const observer = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.2 });
+
+    document.querySelectorAll('.game-card').forEach(card => {
+      observer.observe(card);
+    });
+
+    // Tetris Thumbnail
+    const tetrisSketch = (p) => {
+      p.setup = () => {
+        p.createCanvas(160, 160);
+        p.frameRate(10);
+      };
+
+      p.draw = () => {
+        p.background(currentTheme === 'light' ? 255 : 30);
+        p.fill(currentTheme === 'light' ? '#007bff' : '#00f7ff');
+        p.rect(40, 40, 20, 20);
+        p.rect(40, 60, 20, 20);
+        p.rect(40, 80, 20, 20);
+        p.rect(60, 80, 20, 20);
+      };
+    };
+
+    // Snake Thumbnail
+    const snakeSketch = (p) => {
+      let snake = [{ x: 2, y: 2 }, { x: 2, y: 3 }, { x: 2, y: 4 }];
+      let food = { x: 5, y: 5 };
+      const TILE_SIZE = 20;
+
+      p.setup = () => {
+        p.createCanvas(160, 160);
+        p.frameRate(10);
+      };
+
+      p.draw = () => {
+        p.background(currentTheme === 'light' ? 255 : 30);
+        p.fill('#ff5c00');
+        p.ellipse(food.x * TILE_SIZE + TILE_SIZE / 2, food.y * TILE_SIZE + TILE_SIZE / 2, TILE_SIZE * 0.6);
+
+        p.fill(currentTheme === 'light' ? '#007bff' : '#00f7ff');
+        for (let seg of snake) {
+          p.rect(seg.x * TILE_SIZE, seg.y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+        }
+      };
+    };
+
+    // Flappy Bird Thumbnail
+    const flappySketch = (p) => {
+      p.setup = () => {
+        p.createCanvas(160, 160);
+        p.frameRate(60);
+      };
+
+      p.draw = () => {
+        p.background(currentTheme === 'light' ? 255 : 30);
+        p.fill(currentTheme === 'light' ? '#007bff' : '#00f7ff');
+        p.rect(100, 20, 30, 60);
+        p.rect(100, 100, 30, 60);
+        p.fill('#ffd700');
+        p.ellipse(50, 80 + 8 * p.sin(p.millis() / 400), 16, 16);
+      };
+    };
+
+    // 2D Runner Thumbnail
+    const runnerSketch = (p) => {
+      p.setup = () => {
+        p.createCanvas(160, 160);
+        p.frameRate(60);
+      };
+
+      p.draw = () => {
+        p.background(currentTheme === 'light' ? 255 : 30);
+        p.stroke(currentTheme === 'light' ? '#212529' : '#00f7ff');
+        p.strokeWeight(2);
+        p.line(0, 120, 160, 120);
+        p.fill('#ff5c00');
+        p.rect(40, 100, 16, 16);
+        p.rect(110 + 16 * p.sin(p.millis() / 800), 100, 16, 16);
+      };
+    };
+
+    // Initialize p5.js Instances
+    new p5(tetrisSketch, 'tetris-canvas');
+    new p5(snakeSketch, 'snake-canvas');
+    new p5(flappySketch, 'flappy-canvas');
+    new p5(runnerSketch, 'runner-canvas');
+  </script>
+</body>
+</html>
+
