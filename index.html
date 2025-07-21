@@ -8,7 +8,6 @@
   <link href="https://fonts.googleapis.com/css2?family=Exo:wght@700&family=Montserrat:wght@400;500;700&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.2/p5.min.js"></script>
   <style>
-    
     * {
       margin: 0;
       padding: 0;
@@ -29,7 +28,6 @@
       to { opacity: 1; }
     }
 
-    
     nav {
       background: transparent;
       position: sticky;
@@ -96,7 +94,6 @@
       box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
     }
 
-    
     .hero {
       text-align: center;
       padding: 80px 20px;
@@ -125,7 +122,6 @@
       opacity: 0.8;
     }
 
-    
     .game-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -147,6 +143,7 @@
       opacity: 0;
       transform: translateY(30px);
       will-change: transform, opacity;
+      position: relative;
     }
 
     .game-card.visible {
@@ -160,6 +157,25 @@
       box-shadow: 0 16px 48px rgba(0, 0, 0, 0.15);
     }
 
+    .game-card.coming-soon:hover .thumbnail-canvas {
+      filter: blur(5px);
+      transition: filter 0.3s ease;
+    }
+
+    .game-card.coming-soon:hover::after {
+      content: 'Coming Soon';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 24px;
+      font-weight: 700;
+      font-family: 'Exo', sans-serif;
+      color: #ffffff;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+      z-index: 10;
+    }
+
     .thumbnail-canvas {
       width: 160px;
       height: 160px;
@@ -167,7 +183,7 @@
       border-radius: 16px;
       overflow: hidden;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-      transition: transform 0.4s ease, box-shadow 0.4s ease;
+      transition: transform 0.4s ease, box-shadow 0.4s ease, filter 0.3s ease;
     }
 
     .game-card.visible .thumbnail-canvas {
@@ -210,7 +226,12 @@
       box-shadow: 0 4px 12px rgba(0, 123, 255, 0.4);
     }
 
-    
+    .game-card.coming-soon a {
+      pointer-events: none;
+      background: linear-gradient(135deg, #6c757d, #adb5bd);
+      cursor: not-allowed;
+    }
+
     body.dark-theme {
       background: #000000;
       color: #ffffff;
@@ -280,6 +301,10 @@
       box-shadow: 0 0 12px #FA4616;
     }
 
+    body.dark-theme .game-card.coming-soon a {
+      background: linear-gradient(135deg, #6c757d, #adb5bd);
+    }
+
     /* Responsive Design */
     @media (max-width: 768px) {
       .hero {
@@ -321,7 +346,6 @@
       }
     }
 
-    
     @media (prefers-reduced-motion: reduce) {
       .game-card, .thumbnail-canvas, .game-card a, #theme-toggle, nav {
         transition: none;
@@ -358,11 +382,11 @@
   </section>
 
   <div class="game-grid">
-    <div class="game-card" style="--card-index: 0">
+    <div class="game-card coming-soon" style="--card-index: 0">
       <div class="thumbnail-canvas" id="tetris-canvas"></div>
       <h2>Tetris</h2>
       <p>Stack and clear blocks strategically.</p>
-      <a href="/tetris.html">Play</a>
+      <a href="#">Play</a>
     </div>
     <div class="game-card" style="--card-index: 1">
       <div class="thumbnail-canvas" id="snake-canvas"></div>
@@ -370,17 +394,17 @@
       <p>Grow by eating, avoid collisions.</p>
       <a href="/Games/snake.html">Play</a>
     </div>
-    <div class="game-card" style="--card-index: 2">
+    <div class="game-card coming-soon" style="--card-index: 2">
       <div class="thumbnail-canvas" id="flappy-canvas"></div>
       <h2>Flappy Bird</h2>
       <p>Navigate pipes with precise flaps.</p>
-      <a href="/flappy.html">Play</a>
+      <a href="#">Play</a>
     </div>
-    <div class="game-card" style="--card-index: 3">
+    <div class="game-card coming-soon" style="--card-index: 3">
       <div class="thumbnail-canvas" id="runner-canvas"></div>
       <h2>2D Runner</h2>
       <p>Run, jump, and score endlessly.</p>
-      <a href="/runner.html">Play</a>
+      <a href="#">Play</a>
     </div>
   </div>
 
@@ -393,7 +417,7 @@
       currentTheme = document.body.classList.contains('dark-theme') ? 'dark' : 'light';
     });
 
-    // Scroll Animation for Navigation
+    // Scroll Animation for Navigating
     window.addEventListener('scroll', () => {
       const nav = document.querySelector('nav');
       if (window.scrollY > 100) {
@@ -500,3 +524,4 @@
   </script>
 </body>
 </html>
+
