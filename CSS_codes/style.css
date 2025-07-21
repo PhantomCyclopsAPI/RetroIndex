@@ -1,0 +1,21 @@
+#game-canvas {
+  width: 100%; /* Ensure canvas fills the container */
+  max-width: 800px; /* Match p5.js canvas width */
+  margin-left: auto;
+  margin-right: auto;
+  position: relative; /* Enable layering for border effect */
+  /* Enhanced gradient border using box-shadow */
+  box-shadow: 0 0 0 12px linear-gradient(to top, #000000, #D3D3D3), /* Increased width to 12px for prominence */
+              0 12px 40px rgba(0, 0, 0, 0.15), 0 5px 15px rgba(0, 0, 0, 0.1); /* Existing shadow */
+  border-radius: 1rem; /* Match canvas rounding */
+}
+
+#game-canvas canvas {
+  width: 100% !important; /* Override p5.js default sizing */
+  height: auto !important; /* Maintain aspect ratio */
+  display: block; /* Ensure proper rendering */
+  border-radius: 1rem; /* Maintain rounded corners */
+  /* Ensure canvas content is not clipped by shadow */
+  position: relative;
+  z-index: 1;
+}
