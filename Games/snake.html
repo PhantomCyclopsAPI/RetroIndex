@@ -1,38 +1,869 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <script src="https://cdn.jsdelivr.net/npm/p5@1.9.4/lib/p5.js"></script>
-  <title>Snake Game</title>
-
-  <!-- Tailwind CSS -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <!-- p5.js -->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Play the classic Snake game reimagined in a modern interface. Use arrow keys or WASD to grow and avoid collisions.">
+  <title>Snake</title>
+  <link href="https://fonts.googleapis.com/css2?family=Exo:wght@700&family=Montserrat:wght@400;500;700&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.2/p5.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Montserrat', sans-serif;
+    }
+
+    body {
+      background: linear-gradient(180deg, #e0f7fa 0%, #ffffff 100%);
+      color: #212529;
+      overflow-x: hidden;
+      transition: background 0.5s ease, color 0.5s ease;
+      animation: fadeIn 1.5s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    nav {
+      background: transparent;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      padding: 20px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      box-shadow: none;
+      transition: background 0.3s ease, padding 0.3s ease;
+    }
+
+    nav.scrolled {
+      background: rgba(255, 255, 255, 0.8);
+      backdrop-filter: blur(10px);
+      padding: 10px 20px;
+    }
+
+    nav ul {
+      display: flex;
+      list-style: none;
+      gap: 32px;
+    }
+
+    nav a {
+      color: inherit;
+      text-decoration: none;
+      font-size: 16px;
+      font-weight: 500;
+      position: relative;
+      transition: color 0.3s ease;
+    }
+
+    nav a::after {
+      content: '';
+      position: absolute;
+      bottom: -4px;
+      left: 0;
+      width: 0;
+      height: 2px;
+      background: linear-gradient(90deg, #007bff, #00d4ff);
+      transition: width 0.3s ease;
+    }
+
+    nav a:hover::after {
+      width: 100%;
+    }
+
+    #theme-toggle {
+      background: linear-gradient(135deg, #007bff, #00d4ff);
+      color: #ffffff;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 50px;
+      cursor: pointer;
+      font-size: 14px;
+      margin-left: 32px;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    #theme-toggle:hover {
+      transform: scale(1.05);
+      box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+    }
+
+    .hero {
+      text-align: center;
+      padding: 80px 20px;
+      background: linear-gradient(135deg, #e0f7fa 0%, #ffffff 100%);
+      color: #212529;
+      margin-bottom: 60px;
+      border-radius: 0 0 32px 32px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05);
+      transition: background 0.5s ease;
+    }
+
+    .hero h1 {
+      font-size: 42px;
+      font-weight: 700;
+      margin-bottom: 12px;
+      font-family: 'Exo', sans-serif;
+      background: linear-gradient(90deg, #007bff, #00d4ff);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hero p {
+      font-size: 18px;
+      max-width: 500px;
+      margin: 0 auto;
+      opacity: 0.8;
+    }
+
+    .game-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 40px;
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 40px 20px;
+    }
+
+    .game-card {
+      background: #ffffff;
+      border-radius: 24px;
+      overflow: hidden;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.1);
+      transition: transform 0.4s ease, box-shadow 0.4s ease, opacity 0.6s ease-out, transform 0.6s ease-out;
+      text-align: center;
+      padding: 24px;
+      border: none;
+      opacity: 0;
+      transform: translateY(30px);
+      will-change: transform, opacity;
+    }
+
+    .game-card.visible {
+      opacity: 1;
+      transform: translateY(0);
+      transition-delay: 0s;
+    }
+
+    .game-card:hover {
+      transform: translateY(-12px) scale(1.03);
+      box-shadow: 0 16px 48px rgba(0, 0, 0, 0.15);
+    }
+
+    #game-canvas {
+      width: 400px;
+      height: 400px;
+      margin: 0 auto 20px;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      transition: transform 0.4s ease, box-shadow 0.4s ease;
+    }
+
+    .game-card.visible #game-canvas {
+      transform: scale(1.05);
+      box-shadow: 0 8px 24px rgba(0, 123, 255, 0.2);
+    }
+
+    #game-canvas canvas {
+      width: 100% !important;
+      height: 100% !important;
+      display: block;
+    }
+
+    #hud {
+      margin-bottom: 16px;
+      font-size: 16px;
+      font-weight: 500;
+      color: #212529;
+    }
+
+    #hud span {
+      margin: 0 16px;
+    }
+
+    .game-card h2 {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      font-family: 'Exo', sans-serif;
+    }
+
+    .game-card p {
+      font-size: 14px;
+      color: #6c757d;
+      margin-bottom: 16px;
+    }
+
+    .game-card a.play-button {
+      display: inline-block;
+      background: linear-gradient(135deg, #007bff, #00d4ff);
+      color: #ffffff;
+      padding: 10px 24px;
+      border-radius: 50px;
+      text-decoration: none;
+      font-weight: 500;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .game-card a.play-button:hover {
+      transform: scale(1.05);
+      box-shadow: 0 4px 12px rgba(0, 123, 255, 0.4);
+    }
+
+    .back-link {
+      display: inline-block;
+      text-align: center;
+      margin: 20px auto;
+      color: #007bff;
+      text-decoration: none;
+      font-size: 16px;
+      font-weight: 500;
+      display: block;
+      transition: color 0.3s ease;
+    }
+
+    .back-link:hover {
+      color: #00d4ff;
+    }
+
+    body.dark-theme {
+      background: #000000;
+      color: #ffffff;
+    }
+
+    body.dark-theme nav.scrolled {
+      background: rgba(0, 0, 0, 0.8);
+      backdrop-filter: blur(10px);
+    }
+
+    body.dark-theme nav a::after {
+      background: linear-gradient(90deg, #FA4616, #fc8003);
+      box-shadow: 0 0 5px #FA4616;
+    }
+
+    body.dark-theme #theme-toggle {
+      background: linear-gradient(135deg, #FA4616, #fc8003);
+      box-shadow: 0 0 8px #FA4616;
+    }
+
+    body.dark-theme #theme-toggle:hover {
+      box-shadow: 0 0 12px #FA4616;
+    }
+
+    body.dark-theme .hero {
+      background: #000000;
+      box-shadow: 0 8px 24px rgba(250, 70, 22, 0.1);
+    }
+
+    body.dark-theme .hero h1 {
+      background: linear-gradient(90deg, #FA4616, #fc8003);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    body.dark-theme .hero p {
+      opacity: 0.8;
+    }
+
+    body.dark-theme .game-card {
+      background: #121212;
+      box-shadow: 0 12px 32px rgba(250, 70, 22, 0.1);
+    }
+
+    body.dark-theme .game-card:hover {
+      box-shadow: 0 16px 48px rgba(250, 70, 22, 0.2);
+    }
+
+    body.dark-theme .game-card.visible #game-canvas {
+      box-shadow: 0 8px 24px rgba(250, 70, 22, 0.3);
+    }
+
+    body.dark-theme .game-card p {
+      color: #b0b0b0;
+    }
+
+    body.dark-theme #hud {
+      color: #ffffff;
+    }
+
+    body.dark-theme .game-card a.play-button {
+      background: linear-gradient(135deg, #FA4616, #fc8003);
+      box-shadow: 0 0 8px #FA4616;
+    }
+
+    body.dark-theme .game-card a.play-button:hover {
+      box-shadow: 0 0 12px #FA4616;
+    }
+
+    body.dark-theme .back-link {
+      color: #FA4616;
+    }
+
+    body.dark-theme .back-link:hover {
+      color: #fc8003;
+    }
+
+    @media (max-width: 768px) {
+      .hero {
+        padding: 60px 20px;
+      }
+
+      .hero h1 {
+        font-size: 32px;
+      }
+
+      .hero p {
+        font-size: 16px;
+      }
+
+      nav ul {
+        gap: 20px;
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+
+      nav a {
+        font-size: 14px;
+      }
+
+      #theme-toggle {
+        margin-left: 0;
+        margin-top: 12px;
+      }
+
+      .game-grid {
+        grid-template-columns: 1fr;
+        gap: 32px;
+        padding: 20px;
+      }
+
+      #game-canvas {
+        width: 300px;
+        height: 300px;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .game-card, #game-canvas, .game-card a, #theme-toggle, nav {
+        transition: none;
+      }
+      .game-card.visible {
+        transform: none;
+        opacity: 1;
+        transition-delay: 0s;
+      }
+      .game-card.visible #game-canvas {
+        transform: none;
+      }
+      nav.scrolled {
+        transition: none;
+      }
+    }
+  </style>
 </head>
+<body>
+  <nav role="navigation">
+    <ul>
+      <li><a href="/index.html">Home</a></li>
+      <li><a href="/tetris.html">Tetris</a></li>
+      <li><a href="/Games/snake.html">Snake</a></li>
+      <li><a href="/flappy.html">Flappy Bird</a></li>
+      <li><a href="/runner.html">2D Runner</a></li>
+    </ul>
+    <button id="theme-toggle" aria-label="Toggle theme">Toggle Theme</button>
+  </nav>
 
-<body class="min-h-screen flex items-center justify-center bg-gray-100">
-  <div class="w-full max-w-md bg-white p-6 rounded-2xl shadow-xl text-center border border-gray-200">
-    <h1 class="text-2xl font-bold mb-4 text-gray-800">🐍 Snake Game</h1>
+  <section class="hero">
+    <h1>Snake</h1>
+    <p>Expand by consuming, dodge obstacles, redesigned with a sleek, modern twist.</p>
+  </section>
 
-    <div id="game-canvas" class="mx-auto mb-4 w-fit"></div>
-
-    <!-- Info -->
-    <div class="flex justify-between text-lg font-semibold px-2 mb-4 text-gray-700">
-      <p>Score: <span id="score">0</span></p>
-      <p>High Score: <span id="high-score">0</span></p>
-
-    </div>
-    <p class="text-sm text-gray-500 mb-4">Use arrow keys or WASD to move. Eat red dots to grow, and more!</p>
-
-  
-
-    <div class="mt-4">
-      <a href="../index.html" class="text-blue-500 hover:underline">Back to Home</a>
+  <div class="game-grid">
+    <div class="game-card" style="--card-index: 0">
+      <div id="hud">
+        <span id="score-label">Score: <span id="score">0</span></span>
+        <span id="high-score-label">High Score: <span id="high-score">0</span></span>
+      </div>
+      <div id="game-canvas"></div>
+      <h2>Snake</h2>
+      <p>Use arrow keys or WASD to move. Eat red dots to grow, and more!</p>
     </div>
   </div>
 
-  <script src="../JS_Codes/snake.js"></script>
+  <a href="/index.html" class="back-link">Back to Home</a>
+
+  <script>
+    const GRID_SIZE = 20;
+    const TILE_SIZE = 20;
+    const FPS_RENDER = 120;
+    let movesPerSec = 5;
+    let MOVE_INTERVAL = 1000 / movesPerSec;
+
+    const SPEED_INCREASE_PER_TWO_SCORES = 0.4;
+
+    const CANVAS_BG = 255;
+    const BORDER_COLOR = '#dddddd';
+    const GRAD_START = '#007aff';
+    const GRAD_END = '#d0e6ff';
+    const FOOD_COLOR = '#FF5C00';
+
+    let flashStartTime = null;
+    let flashIsShrinkDot = false;
+    const FLASH_DURATION = 300;
+
+    let shrinkDot = null;
+    const SHRINK_COLOR = '#007aff';
+    let speedDot = null;
+    const SPEED_DOT_COLOR = '#007aff';
+    const SPEED_BOOST_DURATION = 5000;
+    let speedBoostEndTime = null;
+
+    let shrinkEffectStart = null;
+    const SHRINK_EFFECT_DURATION = 500;
+
+    let snake = [];
+    let prevSnake = [];
+    let food;
+    let score = 0;
+    let highScore = +localStorage.getItem('snakeHighScore') || 0;
+    let gameOver = false;
+    let direction = { x: 1, y: 0 };
+    let lastMoveMs = 0;
+    let gameStarted = false;
+    let paused = false;
+    let particles = [];
+    let scoreAnimations = [];
+
+    function setup() {
+      const cnv = createCanvas(GRID_SIZE * TILE_SIZE, GRID_SIZE * TILE_SIZE);
+      cnv.parent('game-canvas');
+      cnv.elt.setAttribute('tabindex', '0');
+      cnv.elt.focus();
+      frameRate(FPS_RENDER);
+      colorMode(RGB, 255);
+
+      particles = [];
+      scoreAnimations = [];
+    }
+
+    function setSnakeSpeed(s) {
+      movesPerSec = constrain(s, 1, 9);
+      MOVE_INTERVAL = 1000 / movesPerSec;
+    }
+
+    function startFreshGame() {
+      snake = [{ x: floor(GRID_SIZE / 2), y: floor(GRID_SIZE / 2) }];
+      prevSnake = snake.map(s => ({ ...s }));
+      direction = { x: 1, y: 0 };
+      score = 0;
+      setSnakeSpeed(5);
+      gameOver = false;
+      paused = false;
+      shrinkEffectStart = null;
+      flashIsShrinkDot = false;
+      lastMoveMs = millis();
+      particles = [];
+      scoreAnimations = [];
+      spawnFood();
+      updateHUD();
+      loop();
+    }
+
+    function updateHUD() {
+      document.getElementById('score').innerText = score;
+      document.getElementById('high-score').innerText = highScore;
+    }
+
+    function drawGridAndBorder(now) {
+      background(CANVAS_BG);
+      strokeWeight(2);
+      for (let y = 0; y < GRID_SIZE; y++) {
+        for (let x = 0; x < GRID_SIZE; x++) {
+          stroke(BORDER_COLOR);
+          noFill();
+          rect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+        }
+      }
+
+      if (flashStartTime) {
+        const elapsed = now - flashStartTime;
+        const t = constrain(elapsed / FLASH_DURATION, 0, 1);
+        if (t >= 1) {
+          flashStartTime = null;
+          flashIsShrinkDot = false;
+        }
+        let flashColor;
+        if (flashIsShrinkDot) {
+          push();
+          colorMode(HSB, 360, 100, 100);
+          const hue = ((now / 1000) * 360) % 360;
+          flashColor = color(hue, 100, 100);
+          flashColor = lerpColor(flashColor, color(BORDER_COLOR), t);
+          pop();
+        } else {
+          flashColor = lerpColor(color(FOOD_COLOR), color(BORDER_COLOR), t);
+        }
+        stroke(flashColor);
+      } else {
+        stroke(BORDER_COLOR);
+      }
+
+      strokeWeight(4);
+      noFill();
+      rect(0, 0, width, height, 16);
+    }
+
+    function createParticles(gridX, gridY, count, isRainbow) {
+      for (let i = 0; i < count; i++) {
+        let c;
+        if (isRainbow) {
+          colorMode(HSB, 360, 100, 100);
+          c = color(random(360), 100, 100);
+          colorMode(RGB, 255);
+        } else {
+          c = color(FOOD_COLOR);
+        }
+        let life = random(30, 60);
+        particles.push({
+          x: gridX * TILE_SIZE + TILE_SIZE / 2,
+          y: gridY * TILE_SIZE + TILE_SIZE / 2,
+          vx: random(-4, 4),
+          vy: random(-4, 4),
+          life: life,
+          maxLife: life,
+          color: c
+        });
+      }
+    }
+
+    function draw() {
+      const now = millis();
+
+      if (speedBoostEndTime && now > speedBoostEndTime) {
+        setSnakeSpeed(min(movesPerSec - 2, 9));
+        speedBoostEndTime = null;
+      }
+
+      drawGridAndBorder(now);
+
+      if (!gameStarted) {
+        textSize(18);
+        fill('#000');
+        textAlign(CENTER, CENTER);
+        text('Press Any Key To Start', width / 2, height / 2);
+        return;
+      }
+
+      noStroke();
+      fill(FOOD_COLOR);
+      ellipse(food.x * TILE_SIZE + TILE_SIZE / 2, food.y * TILE_SIZE + TILE_SIZE / 2, TILE_SIZE * 0.6);
+
+      if (shrinkDot) {
+        noStroke();
+        colorMode(HSB, 360, 100, 100, 100);
+        const pulse = 0.5 + 0.5 * sin(millis() / 300);
+        const maxGlowRadius = TILE_SIZE * 0.8;
+        const glowSteps = 4;
+        for (let i = glowSteps; i >= 1; i--) {
+          const radius = (TILE_SIZE * 0.5 + (maxGlowRadius * pulse * i) / glowSteps) / 2;
+          const alpha = 50 * (1 - i / glowSteps);
+          const hue = ((millis() / 1000) * 360 + i * 20) % 360;
+          fill(hue, 100, 100, alpha);
+          ellipse(
+            shrinkDot.x * TILE_SIZE + TILE_SIZE / 2,
+            shrinkDot.y * TILE_SIZE + TILE_SIZE / 2,
+            radius * 2
+          );
+        }
+        const mainHue = ((millis() / 1000) * 360) % 360;
+        fill(mainHue, 100, 100, 100);
+        ellipse(
+          shrinkDot.x * TILE_SIZE + TILE_SIZE / 2,
+          shrinkDot.y * TILE_SIZE + TILE_SIZE / 2,
+          TILE_SIZE * 0.5
+        );
+        colorMode(RGB, 255);
+      }
+
+      if (speedDot) {
+        noStroke();
+        fill(SPEED_DOT_COLOR);
+        ellipse(
+          speedDot.x * TILE_SIZE + TILE_SIZE / 2,
+          speedDot.y * TILE_SIZE + TILE_SIZE / 2,
+          TILE_SIZE * 0.5
+        );
+      }
+
+      const colStart = color(GRAD_START);
+      const colEnd = color(GRAD_END);
+      for (let i = 0; i < snake.length; i++) {
+        const cur = snake[i];
+        const prev = prevSnake[i] || cur;
+        const xPx = lerp(prev.x, cur.x, paused ? 0 : constrain((now - lastMoveMs) / MOVE_INTERVAL, 0, 1)) * TILE_SIZE;
+        const yPx = lerp(prev.y, cur.y, paused ? 0 : constrain((now - lastMoveMs) / MOVE_INTERVAL, 0, 1)) * TILE_SIZE;
+        const ratio = snake.length === 1 ? 0 : i / (snake.length - 1);
+
+        if (shrinkEffectStart && i >= snake.length - 2 && i < snake.length && snake.length > 1) {
+          const elapsed = now - shrinkEffectStart;
+          const t = constrain(elapsed / SHRINK_EFFECT_DURATION, 0, 1);
+          if (t >= 1) shrinkEffectStart = null;
+          const flash = sin(millis() / 50) * 0.5 + 0.5;
+          const shrinkScale = lerp(1, 0.5, t);
+
+          push();
+          colorMode(HSB, 360, 100, 100, 100);
+          noFill();
+          const pulse = 0.5 + 0.5 * sin(millis() / 300);
+          const maxGlowSize = TILE_SIZE * 1.2;
+          const glowSteps = 4;
+          for (let j = glowSteps; j >= 1; j--) {
+            const glowSize = TILE_SIZE * shrinkScale + (maxGlowSize * pulse * j) / glowSteps;
+            const alpha = 60 * (1 - j / glowSteps);
+            const hue = ((millis() / 1000) * 360 + j * 20) % 360;
+            stroke(hue, 100, 100, alpha);
+            strokeWeight(3);
+            rect(
+              xPx + (TILE_SIZE - glowSize) / 2,
+              yPx + (TILE_SIZE - glowSize) / 2,
+              glowSize,
+              glowSize
+            );
+          }
+          pop();
+
+          fill(lerpColor(color(255), lerpColor(colStart, colEnd, ratio), flash));
+          rect(
+            xPx + (TILE_SIZE * (1 - shrinkScale)) / 2,
+            yPx + (TILE_SIZE * (1 - shrinkScale)) / 2,
+            TILE_SIZE * shrinkScale,
+            TILE_SIZE * shrinkScale
+          );
+        } else {
+          fill(lerpColor(colStart, colEnd, ratio));
+          rect(xPx, yPx, TILE_SIZE, TILE_SIZE);
+        }
+      }
+
+      for (let i = particles.length - 1; i >= 0; i--) {
+        let p = particles[i];
+        let alpha = map(p.life, 0, p.maxLife, 0, 200);
+        let size = map(p.life, 0, p.maxLife, 2, 6);
+        fill(red(p.color), green(p.color), blue(p.color), alpha);
+        noStroke();
+        ellipse(p.x, p.y, size);
+        if (!paused) {
+          p.x += p.vx;
+          p.y += p.vy;
+          p.life -= 1;
+          if (p.life <= 0) {
+            particles.splice(i, 1);
+          }
+        }
+      }
+
+      scoreAnimations.forEach((anim, i) => {
+        let alpha = map(anim.life, 0, anim.maxLife, 0, 255);
+        fill(0, 0, 0, alpha);
+        textSize(14);
+        textAlign(CENTER, CENTER);
+        text(anim.text, anim.x, anim.y - anim.life * 0.5);
+        if (!paused) {
+          anim.life -= 1;
+          if (anim.life <= 0) {
+            scoreAnimations.splice(i, 1);
+          }
+        }
+      });
+
+      if (paused) {
+        textSize(18);
+        fill('#000');
+        textAlign(CENTER, CENTER);
+        text('Paused\nPress Space To Resume', width / 2, height / 2);
+      }
+
+      if (gameOver) {
+        textSize(18);
+        fill('#000');
+        textAlign(CENTER, CENTER);
+        text('Game Over\nPress Any Key To Restart', width / 2, height / 2);
+        noLoop();
+      }
+
+      if (paused) return;
+
+      const elapsed = now - lastMoveMs;
+      let progress = constrain(elapsed / MOVE_INTERVAL, 0, 1);
+
+      if (!gameOver && elapsed >= MOVE_INTERVAL) {
+        prevSnake = snake.map(s => ({ ...s }));
+        const head = { x: snake[0].x + direction.x, y: snake[0].y + direction.y };
+        const hitWall = head.x < 0 || head.x >= GRID_SIZE || head.y < 0 || head.y >= GRID_SIZE;
+        const hitSelf = snake.some(s => s.x === head.x && s.y === head.y);
+        if (hitWall || hitSelf) {
+          gameOver = true;
+        } else {
+          snake.unshift(head);
+          if (head.x === food.x && head.y === food.y) {
+            flashStartTime = now;
+            flashIsShrinkDot = false;
+            score++;
+            if (score > highScore) {
+              highScore = score;
+              localStorage.setItem('snakeHighScore', highScore);
+            }
+            updateHUD();
+            
+            createParticles(head.x, head.y, 10, false);
+            scoreAnimations.push({
+              x: head.x * TILE_SIZE + TILE_SIZE / 2,
+              y: head.y * TILE_SIZE + TILE_SIZE / 2,
+              text: '+1',
+              life: 60,
+              maxLife: 60
+            });
+
+            if (score % 2 === 0 && score <= 20) {
+              setSnakeSpeed(movesPerSec + SPEED_INCREASE_PER_TWO_SCORES);
+            }
+
+            if (score >= 2 && random() < 0.3) {
+              if (random() < 0.5) {
+                shrinkDot = spawnSpecialDot('shrink');
+              } else {
+                speedDot = spawnSpecialDot('speed');
+              }
+            }
+
+            spawnFood();
+          } else {
+            snake.pop();
+
+            if (shrinkDot && head.x === shrinkDot.x && head.y === shrinkDot.y) {
+              if (snake.length > 3) {
+                const tail1 = { ...snake[snake.length - 1] };
+                const tail2 = { ...snake[snake.length - 2] };
+                snake.splice(-2, 2);
+                score = max(0, score - 2);
+                updateHUD();
+                shrinkEffectStart = now;
+                flashStartTime = now;
+                flashIsShrinkDot = true;
+                createParticles(head.x, head.y, 10, true);
+                createParticles(tail1.x, tail1.y, 8, true);
+                createParticles(tail2.x, tail2.y, 8, true);
+                scoreAnimations.push({
+                  x: head.x * TILE_SIZE + TILE_SIZE / 2,
+                  y: head.y * TILE_SIZE + TILE_SIZE / 2,
+                  text: '-2',
+                  life: 60,
+                  maxLife: 60
+                });
+              }
+              shrinkDot = null;
+            }
+
+            if (speedDot && head.x === speedDot.x && head.y === speedDot.y) {
+              setSnakeSpeed(movesPerSec + 2);
+              speedBoostEndTime = now + SPEED_BOOST_DURATION;
+              flashStartTime = now;
+              flashIsShrinkDot = false;
+              createParticles(head.x, head.y, 10, false);
+              scoreAnimations.push({
+                x: head.x * TILE_SIZE + TILE_SIZE / 2,
+                y: head.y * TILE_SIZE + TILE_SIZE / 2,
+                text: 'Speed Up!',
+                life: 60,
+                maxLife: 60
+              });
+              speedDot = null;
+            }
+          }
+          lastMoveMs = now;
+        }
+      }
+    }
+
+    function keyPressed() {
+      if (!gameStarted) {
+        gameStarted = true;
+        startFreshGame();
+        return;
+      }
+      if (gameOver) {
+        startFreshGame();
+        gameStarted = true;
+        return;
+      }
+      if (key === ' ') {
+        paused = !paused;
+        if (!paused) loop();
+        return;
+      }
+     
+      const { x, y } = direction;
+     
+      if ((keyCode === LEFT_ARROW || key === 'a' || key === 'A') && x !== 1) direction = { x: -1, y: 0 };
+      if ((keyCode === RIGHT_ARROW || key === 'd' || key === 'D') && x !== -1) direction = { x: 1, y: 0 };
+      if ((keyCode === UP_ARROW || key === 'w' || key === 'W') && y !== 1) direction = { x: 0, y: -1 };
+      if ((keyCode === DOWN_ARROW || key === 's' || key === 'S') && y !== -1) direction = { x: 0, y: 1 };
+    }
+
+    function spawnFood() {
+      do {
+        food = { x: floor(random(GRID_SIZE)), y: floor(random(GRID_SIZE)) };
+      } while (snake.some(s => s.x === food.x && s.y === food.y));
+    }
+
+    function spawnSpecialDot(type) {
+      let dot;
+      do {
+        dot = { x: floor(random(GRID_SIZE)), y: floor(random(GRID_SIZE)) };
+      } while (
+        snake.some(s => s.x === dot.x && s.y === dot.y) ||
+        (food && food.x === dot.x && food.y === dot.y) ||
+        (type === 'shrink' && speedDot && speedDot.x === dot.x && speedDot.y === dot.y) ||
+        (type === 'speed' && shrinkDot && shrinkDot.x === dot.x && speedDot.y === dot.y)
+      );
+      return dot;
+    }
+
+    let currentTheme = 'light';
+
+    document.getElementById('theme-toggle').addEventListener('click', () => {
+      document.body.classList.toggle('dark-theme');
+      currentTheme = document.body.classList.contains('dark-theme') ? 'dark' : 'light';
+    });
+
+    window.addEventListener('scroll', () => {
+      const nav = document.querySelector('nav');
+      if (window.scrollY > 100) {
+        nav.classList.add('scrolled');
+      } else {
+        nav.classList.remove('scrolled');
+      }
+    });
+
+    const observer = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.2 });
+
+    document.querySelectorAll('.game-card').forEach(card => {
+      observer.observe(card);
+    });
+  </script>
 </body>
 </html>
