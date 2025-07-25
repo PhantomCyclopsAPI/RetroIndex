@@ -4,7 +4,8 @@ const FPS_RENDER = 120;
 let movesPerSec = 5;
 let MOVE_INTERVAL = 1000 / movesPerSec;
 
-// Colors
+const SPEED_INCREASE_PER_TWO_SCORES = 0.4;
+
 const CANVAS_BG = 255;
 const BORDER_COLOR = '#dddddd';
 const GRAD_START = '#007aff';
@@ -12,17 +13,19 @@ const GRAD_END = '#d0e6ff';
 const FOOD_COLOR = '#FF5C00';
 
 let flashStartTime = null;
-let flashIsShrinkDot = false; // Track if flash is for shrink dot
-const FLASH_DURATION = 300; // milliseconds
+let flashIsShrinkDot = false;
+const FLASH_DURATION = 300;
 
 let shrinkDot = null;
 const SHRINK_COLOR = '#007aff';
+let speedDot = null;
+const SPEED_DOT_COLOR = '#007aff'; // Changed to blue
+const SPEED_BOOST_DURATION = 5000;
+let speedBoostEndTime = null;
 
-// State for shrink effect
 let shrinkEffectStart = null;
-const SHRINK_EFFECT_DURATION = 500; // Increased to 500ms for visibility
+const SHRINK_EFFECT_DURATION = 500;
 
-// Game state
 let snake = [];
 let prevSnake = [];
 let food;
@@ -32,23 +35,9 @@ let gameOver = false;
 let direction = { x: 1, y: 0 };
 let lastMoveMs = 0;
 let gameStarted = false;
-let paused = false; // Pause state
+let paused = false;
 let particles = [];
-
-// New: Food flip (rotateX) animation state
-let foodFlipStartTime = 0;
-const FOOD_FLIP_DURATION_FORWARD = 500; // ms for forward flip (fast)
-const FOOD_FLIP_DURATION_BACK = 2000; // ms for slow back (gravity-like return)
-let foodFlipPhase = 0; // 0: idle, 1: forward, 2: back
-let foodFlipSignedAngle = 0; // Dynamic based on score and position (signed for direction)
-
-// New: Shrink flip (rotateY) animation state
-let shrinkFlipStartTime = 0;
-const SHRINK_FLIP_DURATION_FORWARD = 500; // ms for forward flip
-const SHRINK_FLIP_DURATION_BACK = 2000; // ms for slow back
-let shrinkFlipPhase = 0; // 0: idle, 1: forward, 2: back
-let shrinkFlipSignedAngle = 0; // Fixed magnitude, signed for direction
-const SHRINK_FLIP_ANGLE = 30; // Fixed magnitude 30°
+let scoreAnimations = [];
 
 function setup() {
   const cnv = createCanvas(GRID_SIZE * TILE_SIZE, GRID_SIZE * TILE_SIZE);
@@ -56,22 +45,18 @@ function setup() {
   cnv.elt.setAttribute('tabindex', '0');
   cnv.elt.focus();
   frameRate(FPS_RENDER);
-  colorMode(RGB, 255); // Ensure default RGB mode for other elements
+  colorMode(RGB, 255);
 
-  // Floating card style
   cnv.elt.style.borderRadius = '16px';
   cnv.elt.style.boxShadow = '0 8px 30px rgba(0,0,0,0.08)';
   cnv.elt.style.border = '1px solid #ddd';
 
-  // For 3D flips: Set CSS perspective on parent container
-  const container = document.getElementById('game-canvas');
-  container.style.perspective = '1000px'; // Add perspective for 3D effect
-
   particles = [];
+  scoreAnimations = [];
 }
 
 function setSnakeSpeed(s) {
-  movesPerSec = constrain(s, 1, 60);
+  movesPerSec = constrain(s, 1, 9);
   MOVE_INTERVAL = 1000 / movesPerSec;
 }
 
@@ -82,18 +67,12 @@ function startFreshGame() {
   score = 0;
   setSnakeSpeed(5);
   gameOver = false;
-  paused = false; // Reset pause state
-  shrinkEffectStart = null; // Reset shrink effect
-  flashIsShrinkDot = false; // Reset flash type
+  paused = false;
+  shrinkEffectStart = null;
+  flashIsShrinkDot = false;
   lastMoveMs = millis();
   particles = [];
-  foodFlipStartTime = 0;
-  foodFlipPhase = 0;
-  foodFlipSignedAngle = 0;
-  shrinkFlipStartTime = 0;
-  shrinkFlipPhase = 0;
-  shrinkFlipSignedAngle = 0;
-  
+  scoreAnimations = [];
   spawnFood();
   updateHUD();
   loop();
@@ -115,7 +94,6 @@ function drawGridAndBorder(now) {
     }
   }
 
-  // Flash border effect
   if (flashStartTime) {
     const elapsed = now - flashStartTime;
     const t = constrain(elapsed / FLASH_DURATION, 0, 1);
@@ -125,17 +103,14 @@ function drawGridAndBorder(now) {
     }
     let flashColor;
     if (flashIsShrinkDot) {
-      // Rainbow gradient flash for shrink dot
       push();
       colorMode(HSB, 360, 100, 100);
-      const hue = ((now / 1000) * 360) % 360; // Cycle hues to match shrink dot
+      const hue = ((now / 1000) * 360) % 360;
       flashColor = color(hue, 100, 100);
-      // Fade to border color
       flashColor = lerpColor(flashColor, color(BORDER_COLOR), t);
       pop();
     } else {
-      // Default flash for food
-      flashColor = lerpColor(color('#007aff'), color(BORDER_COLOR), t);
+      flashColor = lerpColor(color(FOOD_COLOR), color(BORDER_COLOR), t); // Changed to FOOD_COLOR
     }
     stroke(flashColor);
   } else {
@@ -173,6 +148,11 @@ function createParticles(gridX, gridY, count, isRainbow) {
 function draw() {
   const now = millis();
 
+  if (speedBoostEndTime && now > speedBoostEndTime) {
+    setSnakeSpeed(min(movesPerSec - 2, 9));
+    speedBoostEndTime = null;
+  }
+
   drawGridAndBorder(now);
 
   if (!gameStarted) {
@@ -183,32 +163,27 @@ function draw() {
     return;
   }
 
-  // Draw food
   noStroke();
   fill(FOOD_COLOR);
   ellipse(food.x * TILE_SIZE + TILE_SIZE / 2, food.y * TILE_SIZE + TILE_SIZE / 2, TILE_SIZE * 0.6);
 
-  // Draw shrink dot with rainbow gradient glowing effect
   if (shrinkDot) {
     noStroke();
-    // Switch to HSB for rainbow colors
     colorMode(HSB, 360, 100, 100, 100);
-    // Glowing effect: draw concentric circles with rainbow gradient
-    const pulse = 0.5 + 0.5 * sin(millis() / 300); // Pulsate between 0.5 and 1
+    const pulse = 0.5 + 0.5 * sin(millis() / 300);
     const maxGlowRadius = TILE_SIZE * 0.8;
     const glowSteps = 4;
     for (let i = glowSteps; i >= 1; i--) {
       const radius = (TILE_SIZE * 0.5 + (maxGlowRadius * pulse * i) / glowSteps) / 2;
-      const alpha = 50 * (1 - i / glowSteps); // Fade out (50% to 12.5%)
-      const hue = ((millis() / 1000) * 360 + i * 20) % 360; // Cycle hues, offset per circle
-      fill(hue, 100, 100, alpha); // Rainbow color with alpha
+      const alpha = 50 * (1 - i / glowSteps);
+      const hue = ((millis() / 1000) * 360 + i * 20) % 360;
+      fill(hue, 100, 100, alpha);
       ellipse(
         shrinkDot.x * TILE_SIZE + TILE_SIZE / 2,
         shrinkDot.y * TILE_SIZE + TILE_SIZE / 2,
         radius * 2
       );
     }
-    // Draw main shrink dot with rainbow center
     const mainHue = ((millis() / 1000) * 360) % 360;
     fill(mainHue, 100, 100, 100);
     ellipse(
@@ -216,11 +191,19 @@ function draw() {
       shrinkDot.y * TILE_SIZE + TILE_SIZE / 2,
       TILE_SIZE * 0.5
     );
-    // Switch back to RGB for other elements
     colorMode(RGB, 255);
   }
 
-  // Draw snake with gradient, shrink effect, and rainbow glowing border
+  if (speedDot) {
+    noStroke();
+    fill(SPEED_DOT_COLOR);
+    ellipse(
+      speedDot.x * TILE_SIZE + TILE_SIZE / 2,
+      speedDot.y * TILE_SIZE + TILE_SIZE / 2,
+      TILE_SIZE * 0.5
+    );
+  }
+
   const colStart = color(GRAD_START);
   const colEnd = color(GRAD_END);
   for (let i = 0; i < snake.length; i++) {
@@ -230,27 +213,25 @@ function draw() {
     const yPx = lerp(prev.y, cur.y, paused ? 0 : constrain((now - lastMoveMs) / MOVE_INTERVAL, 0, 1)) * TILE_SIZE;
     const ratio = snake.length === 1 ? 0 : i / (snake.length - 1);
 
-    // Apply shrink effect to last two segments
     if (shrinkEffectStart && i >= snake.length - 2 && i < snake.length && snake.length > 1) {
       const elapsed = now - shrinkEffectStart;
       const t = constrain(elapsed / SHRINK_EFFECT_DURATION, 0, 1);
-      if (t >= 1) shrinkEffectStart = null; // End effect
-      const flash = sin(millis() / 50) * 0.5 + 0.5; // Rapid flash
-      const shrinkScale = lerp(1, 0.5, t); // Shrink to 50% size
+      if (t >= 1) shrinkEffectStart = null;
+      const flash = sin(millis() / 50) * 0.5 + 0.5;
+      const shrinkScale = lerp(1, 0.5, t);
 
-      // Draw rainbow glowing border
-      push(); // Isolate drawing state
+      push();
       colorMode(HSB, 360, 100, 100, 100);
       noFill();
-      const pulse = 0.5 + 0.5 * sin(millis() / 300); // Match shrink dot pulse
-      const maxGlowSize = TILE_SIZE * 1.2; // Slightly larger for visibility
+      const pulse = 0.5 + 0.5 * sin(millis() / 300);
+      const maxGlowSize = TILE_SIZE * 1.2;
       const glowSteps = 4;
       for (let j = glowSteps; j >= 1; j--) {
         const glowSize = TILE_SIZE * shrinkScale + (maxGlowSize * pulse * j) / glowSteps;
-        const alpha = 60 * (1 - j / glowSteps); // Slightly higher opacity (60% to 15%)
-        const hue = ((millis() / 1000) * 360 + j * 20) % 360; // Match shrink dot hues
+        const alpha = 60 * (1 - j / glowSteps);
+        const hue = ((millis() / 1000) * 360 + j * 20) % 360;
         stroke(hue, 100, 100, alpha);
-        strokeWeight(3); // Thicker for visibility
+        strokeWeight(3);
         rect(
           xPx + (TILE_SIZE - glowSize) / 2,
           yPx + (TILE_SIZE - glowSize) / 2,
@@ -258,9 +239,8 @@ function draw() {
           glowSize
         );
       }
-      pop(); // Restore drawing state
+      pop();
 
-      // Draw shrinking segment
       fill(lerpColor(color(255), lerpColor(colStart, colEnd, ratio), flash));
       rect(
         xPx + (TILE_SIZE * (1 - shrinkScale)) / 2,
@@ -274,7 +254,6 @@ function draw() {
     }
   }
 
-  // Draw particles
   for (let i = particles.length - 1; i >= 0; i--) {
     let p = particles[i];
     let alpha = map(p.life, 0, p.maxLife, 0, 200);
@@ -282,7 +261,7 @@ function draw() {
     fill(red(p.color), green(p.color), blue(p.color), alpha);
     noStroke();
     ellipse(p.x, p.y, size);
-    if (!paused) { // Update particles only when not paused
+    if (!paused) {
       p.x += p.vx;
       p.y += p.vy;
       p.life -= 1;
@@ -291,6 +270,20 @@ function draw() {
       }
     }
   }
+
+  scoreAnimations.forEach((anim, i) => {
+    let alpha = map(anim.life, 0, anim.maxLife, 0, 255);
+    fill(0, 0, 0, alpha);
+    textSize(14);
+    textAlign(CENTER, CENTER);
+    text(anim.text, anim.x, anim.y - anim.life * 0.5);
+    if (!paused) {
+      anim.life -= 1;
+      if (anim.life <= 0) {
+        scoreAnimations.splice(i, 1);
+      }
+    }
+  });
 
   if (paused) {
     textSize(18);
@@ -304,10 +297,10 @@ function draw() {
     fill('#000');
     textAlign(CENTER, CENTER);
     text('Game Over\nPress Any Key To Restart', width / 2, height / 2);
-    noLoop(); // Stop loop after drawing game-over message
+    noLoop();
   }
 
-  if (paused) return; // Skip game logic updates when paused
+  if (paused) return;
 
   const elapsed = now - lastMoveMs;
   let progress = constrain(elapsed / MOVE_INTERVAL, 0, 1);
@@ -323,7 +316,7 @@ function draw() {
       snake.unshift(head);
       if (head.x === food.x && head.y === food.y) {
         flashStartTime = now;
-        flashIsShrinkDot = false; // Set flash type to food
+        flashIsShrinkDot = false;
         score++;
         if (score > highScore) {
           highScore = score;
@@ -332,99 +325,72 @@ function draw() {
         updateHUD();
         
         createParticles(head.x, head.y, 10, false);
+        scoreAnimations.push({
+          x: head.x * TILE_SIZE + TILE_SIZE / 2,
+          y: head.y * TILE_SIZE + TILE_SIZE / 2,
+          text: '+1',
+          life: 60,
+          maxLife: 60
+        });
 
-        // New: Trigger food flip (rotateX) on eating food, direction based on food position
-        const baseAngle = constrain(30 + floor((score - 1) / 5) * 5, 30, 70); // Incremental: 30 + 5 per 5 scores, max 70
-        const foodPixelY = food.y * TILE_SIZE + TILE_SIZE / 2;
-        const sign = foodPixelY < height / 2 ? -1 : 1; // Upper half: negative (top forward), lower: positive (bottom forward)
-        foodFlipSignedAngle = baseAngle * sign;
-        foodFlipStartTime = now;
-        foodFlipPhase = 1; // Start forward flip
-        console.log('Food flip triggered with signed angle:', foodFlipSignedAngle);
+        if (score % 2 === 0 && score <= 20) {
+          setSnakeSpeed(movesPerSec + SPEED_INCREASE_PER_TWO_SCORES);
+        }
 
-        if (score >= 5 && random() < 0.3) {
-          spawnShrinkDot();
+        if (score >= 2 && random() < 0.3) {
+          if (random() < 0.5) {
+            shrinkDot = spawnSpecialDot('shrink');
+          } else {
+            speedDot = spawnSpecialDot('speed');
+          }
         }
 
         spawnFood();
       } else {
         snake.pop();
 
-        // Check if shrink dot eaten
         if (shrinkDot && head.x === shrinkDot.x && head.y === shrinkDot.y) {
           if (snake.length > 3) {
             const tail1 = { ...snake[snake.length - 1] };
             const tail2 = { ...snake[snake.length - 2] };
-            snake.splice(-2, 2); // Remove last 2 segments
-            shrinkEffectStart = now; // Trigger shrink effect
-            flashStartTime = now; // Trigger border flash
-            flashIsShrinkDot = true; // Set flash type to shrink dot
+            snake.splice(-2, 2);
+            score = max(0, score - 2); // Decrease score by 2, not below 0
+            updateHUD();
+            shrinkEffectStart = now;
+            flashStartTime = now;
+            flashIsShrinkDot = true;
             createParticles(head.x, head.y, 10, true);
             createParticles(tail1.x, tail1.y, 8, true);
             createParticles(tail2.x, tail2.y, 8, true);
-
-            // New: Trigger shrink flip (rotateY) on eating shrink dot, direction based on position
-            const shrinkPixelX = shrinkDot.x * TILE_SIZE + TILE_SIZE / 2;
-            const shrinkSign = shrinkPixelX < width / 2 ? -1 : 1; // Left half: negative (left forward), right: positive (right forward)
-            shrinkFlipSignedAngle = SHRINK_FLIP_ANGLE * shrinkSign;
-            shrinkFlipStartTime = now;
-            shrinkFlipPhase = 1; // Start forward flip
-            console.log('Shrink flip triggered with signed angle:', shrinkFlipSignedAngle);
+            scoreAnimations.push({
+              x: head.x * TILE_SIZE + TILE_SIZE / 2,
+              y: head.y * TILE_SIZE + TILE_SIZE / 2,
+              text: '-2',
+              life: 60,
+              maxLife: 60
+            });
           }
           shrinkDot = null;
+        }
+
+        if (speedDot && head.x === speedDot.x && head.y === speedDot.y) {
+          setSnakeSpeed(movesPerSec + 2);
+          speedBoostEndTime = now + SPEED_BOOST_DURATION;
+          flashStartTime = now; // Trigger orange flash
+          flashIsShrinkDot = false;
+          createParticles(head.x, head.y, 10, false);
+          scoreAnimations.push({
+            x: head.x * TILE_SIZE + TILE_SIZE / 2,
+            y: head.y * TILE_SIZE + TILE_SIZE / 2,
+            text: 'Speed Up!',
+            life: 60,
+            maxLife: 60
+          });
+          speedDot = null;
         }
       }
       lastMoveMs = now;
     }
-  }
-
-  // New: Apply food flip (rotateX) animation
-  let xAngle = 0;
-  if (foodFlipPhase > 0) {
-    const elapsedFoodFlip = now - foodFlipStartTime;
-    if (foodFlipPhase === 1) { // Forward flip to foodFlipSignedAngle
-      const t = constrain(elapsedFoodFlip / FOOD_FLIP_DURATION_FORWARD, 0, 1);
-      xAngle = foodFlipSignedAngle * t;
-      if (t >= 1) {
-        foodFlipStartTime = now;
-        foodFlipPhase = 2;
-      }
-    } else if (foodFlipPhase === 2) { // Slow back to 0
-      const t = constrain(elapsedFoodFlip / FOOD_FLIP_DURATION_BACK, 0, 1);
-      xAngle = foodFlipSignedAngle * (1 - t);
-      if (t >= 1) {
-        foodFlipPhase = 0;
-      }
-    }
-  }
-
-  // New: Apply shrink flip (rotateY) animation
-  let yAngle = 0;
-  if (shrinkFlipPhase > 0) {
-    const elapsedShrinkFlip = now - shrinkFlipStartTime;
-    if (shrinkFlipPhase === 1) { // Forward flip to shrinkFlipSignedAngle
-      const t = constrain(elapsedShrinkFlip / SHRINK_FLIP_DURATION_FORWARD, 0, 1);
-      yAngle = shrinkFlipSignedAngle * t;
-      if (t >= 1) {
-        shrinkFlipStartTime = now;
-        shrinkFlipPhase = 2;
-      }
-    } else if (shrinkFlipPhase === 2) { // Slow back to 0
-      const t = constrain(elapsedShrinkFlip / SHRINK_FLIP_DURATION_BACK, 0, 1);
-      yAngle = shrinkFlipSignedAngle * (1 - t);
-      if (t >= 1) {
-        shrinkFlipPhase = 0;
-      }
-    }
-  }
-
-  // Apply combined CSS transform if any animation active
-  if (foodFlipPhase > 0 || shrinkFlipPhase > 0) {
-    const container = document.getElementById('game-canvas');
-    container.style.transform = `rotateX(${xAngle}deg) rotateY(${yAngle}deg)`;
-  } else {
-    const container = document.getElementById('game-canvas');
-    container.style.transform = ''; // Reset when idle
   }
 }
 
@@ -439,9 +405,9 @@ function keyPressed() {
     gameStarted = true;
     return;
   }
-  if (key === ' ') { // Toggle pause on spacebar
+  if (key === ' ') {
     paused = !paused;
-    if (!paused) loop(); // Resume drawing if unpaused
+    if (!paused) loop();
     return;
   }
  
@@ -459,11 +425,15 @@ function spawnFood() {
   } while (snake.some(s => s.x === food.x && s.y === food.y));
 }
 
-function spawnShrinkDot() {
+function spawnSpecialDot(type) {
+  let dot;
   do {
-    shrinkDot = { x: floor(random(GRID_SIZE)), y: floor(random(GRID_SIZE)) };
+    dot = { x: floor(random(GRID_SIZE)), y: floor(random(GRID_SIZE)) };
   } while (
-    snake.some(s => s.x === shrinkDot.x && s.y === shrinkDot.y) ||
-    (food && food.x === shrinkDot.x && food.y === shrinkDot.y)
+    snake.some(s => s.x === dot.x && s.y === dot.y) ||
+    (food && food.x === dot.x && food.y === dot.y) ||
+    (type === 'shrink' && speedDot && speedDot.x === dot.x && speedDot.y === dot.y) ||
+    (type === 'speed' && shrinkDot && shrinkDot.x === dot.x && shrinkDot.y === dot.y)
   );
+  return dot;
 }
