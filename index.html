@@ -3,12 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Play classic retro games like Tetris, Snake, Flappy Bird, and 2D Runner online. Discover reimagined classics in a modern interface.">
+  <meta name="description" content="Play classic retro games like Tetris, Snake, Flappy Bird, and Maze online. Discover reimagined classics in a modern interface.">
   <title>Retro Index</title>
   <link href="https://fonts.googleapis.com/css2?family=Exo:wght@700&family=Montserrat:wght@400;500;700&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.2/p5.min.js"></script>
   <style>
-    
     * {
       margin: 0;
       padding: 0;
@@ -29,7 +28,6 @@
       to { opacity: 1; }
     }
 
-    
     nav {
       background: transparent;
       position: sticky;
@@ -96,7 +94,6 @@
       box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
     }
 
-    
     .hero {
       text-align: center;
       padding: 80px 20px;
@@ -125,7 +122,6 @@
       opacity: 0.8;
     }
 
-    
     .game-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -210,7 +206,6 @@
       box-shadow: 0 4px 12px rgba(0, 123, 255, 0.4);
     }
 
-    
     body.dark-theme {
       background: #000000;
       color: #ffffff;
@@ -280,7 +275,6 @@
       box-shadow: 0 0 12px #FA4616;
     }
 
-    /* Responsive Design */
     @media (max-width: 768px) {
       .hero {
         padding: 60px 20px;
@@ -321,7 +315,6 @@
       }
     }
 
-    
     @media (prefers-reduced-motion: reduce) {
       .game-card, .thumbnail-canvas, .game-card a, #theme-toggle, nav {
         transition: none;
@@ -347,7 +340,7 @@
       <li><a href="/tetris.html">Tetris</a></li>
       <li><a href="/Games/snake.html">Snake</a></li>
       <li><a href="/flappy.html">Flappy Bird</a></li>
-      <li><a href="/runner.html">2D Runner</a></li>
+      <li><a href="/Games/maze.html">Maze</a></li>
     </ul>
     <button id="theme-toggle" aria-label="Toggle theme">Toggle Theme</button>
   </nav>
@@ -377,10 +370,10 @@
       <a href="/flappy.html">Play</a>
     </div>
     <div class="game-card" style="--card-index: 3">
-      <div class="thumbnail-canvas" id="runner-canvas"></div>
-      <h2>2D Runner</h2>
-      <p>Run, jump, and score endlessly.</p>
-      <a href="/runner.html">Play</a>
+      <div class="thumbnail-canvas" id="maze-canvas"></div>
+      <h2>Maze</h2>
+      <p>Navigate through intricate mazes to reach the goal.</p>
+      <a href="/Games/maze.html">Play</a>
     </div>
   </div>
 
@@ -474,21 +467,47 @@
       };
     };
 
-    // 2D Runner Thumbnail
-    const runnerSketch = (p) => {
+    // Maze Thumbnail
+    const mazeSketch = (p) => {
+      const TILE_SIZE = 20;
+      const GRID_SIZE = 8; // Smaller grid for thumbnail
+      const maze = [
+        ['#', '#', '#', '#', '#', '#', '#', '#'],
+        ['#', 'S', '.', '.', '.', '.', '.', '#'],
+        ['#', '.', '#', '#', '#', '.', '#', '#'],
+        ['#', '.', '.', '.', '#', '.', '.', '#'],
+        ['#', '#', '#', '.', '#', '#', '.', '#'],
+        ['#', '.', '.', '.', '.', '.', '.', '#'],
+        ['#', '.', '#', '#', '#', '#', 'G', '#'],
+        ['#', '#', '#', '#', '#', '#', '#', '#']
+      ];
+
       p.setup = () => {
         p.createCanvas(160, 160);
-        p.frameRate(60);
+        p.frameRate(10);
       };
 
       p.draw = () => {
         p.background(currentTheme === 'light' ? 255 : 0);
-        p.stroke(currentTheme === 'light' ? '#212529' : '#FA4616');
-        p.strokeWeight(2);
-        p.line(0, 120, 160, 120);
-        p.fill('#ff5c00');
-        p.rect(40, 100, 16, 16);
-        p.rect(110 + 16 * p.sin(p.millis() / 800), 100, 16, 16);
+        p.noStroke();
+
+        // Draw walls
+        p.fill(currentTheme === 'light' ? '#808080' : '#b0b0b0');
+        for (let y = 0; y < GRID_SIZE; y++) {
+          for (let x = 0; x < GRID_SIZE; x++) {
+            if (maze[y][x] === '#') {
+              p.rect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+            }
+          }
+        }
+
+        // Draw player
+        p.fill(currentTheme === 'light' ? '#007bff' : '#FA4616');
+        p.rect(1 * TILE_SIZE, 1 * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+
+        // Draw goal
+        p.fill('#00ff00');
+        p.rect(6 * TILE_SIZE, 6 * TILE_SIZE, TILE_SIZE, TILE_SIZE);
       };
     };
 
@@ -496,7 +515,7 @@
     new p5(tetrisSketch, 'tetris-canvas');
     new p5(snakeSketch, 'snake-canvas');
     new p5(flappySketch, 'flappy-canvas');
-    new p5(runnerSketch, 'runner-canvas');
+    new p5(mazeSketch, 'maze-canvas');
   </script>
 </body>
 </html>
