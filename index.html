@@ -321,14 +321,12 @@
         }
       }
       function drawBoard(col){
-        // background
         p.noStroke();
         for (let y=0; y<SIZE; y++){
           const t = y/SIZE;
           p.fill(p.lerpColor(col.bg1, col.bg2, t));
           p.rect(0,y,SIZE,1);
         }
-        // grid
         p.stroke(col.grid); p.strokeWeight(1);
         for (let i=0;i<GRID;i++){
           const x = PAD + i*step, y = PAD + i*step;
@@ -339,11 +337,9 @@
       function drawStone(gx, gy, color, col, isLast=false, t=0){
         const x = PAD + gx*step, y = PAD + gy*step;
         const r = step*0.42;
-        // drop scale
         const s = isLast ? 0.90 + 0.10 * (0.5 + 0.5 * Math.sin(t*0.015)) : 1.0;
         p.push(); p.translate(x, y); p.scale(s);
 
-        // glow for last stone
         if (isLast){
           p.noFill();
           for (let i=0;i<4;i++){
@@ -355,20 +351,15 @@
           }
         }
 
-        // stone body
         p.noStroke();
         if (color==='black'){
-          // dark body
           p.fill(currentTheme==='light' ? p.color(30,30,30) : p.color(18,18,18));
           p.ellipse(0,0, r*2, r*2);
-          // glossy highlight
           p.fill(255,255,255, currentTheme==='light'?30:18);
           p.ellipse(-r*0.2,-r*0.25, r*0.9, r*0.7);
-          // outline (gold in dark mode, subtle in light)
           p.noFill(); p.stroke(col.blackOutline); p.strokeWeight(currentTheme==='light'?1.5:2.2);
           p.ellipse(0,0, r*2-1, r*2-1);
         }else{
-          // white stone
           p.fill(255); p.ellipse(0,0, r*2, r*2);
           p.noFill(); p.stroke(0,0,0,40); p.strokeWeight(1.5); p.ellipse(0,0, r*2-1, r*2-1);
           p.noStroke(); p.fill(255,255,255,90); p.ellipse(-r*0.2,-r*0.25, r*0.9, r*0.7);
@@ -387,13 +378,11 @@
         p.background(currentTheme==='light'?255:0);
         drawBoard(col);
 
-        // animate active index
         const t = p.millis();
-        const period = 3600; // full cycle
-        const phase = (t % period) / period; // 0~1
+        const period = 3600;
+        const phase = (t % period) / period;
         lastIdx = Math.floor(phase * stones.length);
 
-        // draw stones; ensure at least 1 stone visible
         for (let i=0;i<stones.length;i++){
           const isLast = i === lastIdx;
           const st = Math.max(0, t - i*200);
