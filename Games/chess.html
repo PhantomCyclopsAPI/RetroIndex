@@ -1,187 +1,271 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>五子棋</title>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <meta name="description" content="Play Gomoku (Connect 5). Smart AI with clean visuals and smooth animations."/>
+  <title>Gomoku · Connect 5</title>
+  <link href="https://fonts.googleapis.com/css2?family=Exo:wght@700&family=Montserrat:wght@400;500;700&display=swap" rel="stylesheet">
   <style>
-    body {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
-      margin: 0;
-      background: linear-gradient(135deg, #ece9e6, #ffffff);
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    /* ========= 基础变量（与首页一致的色系） ========= */
+    :root{
+      --cell: 34px;
+      --pad: 14px;
+      --line: rgba(0,0,0,.18);   /* 网格线（浅色主题下） */
+      --accentA:#007bff;         /* 顶部按钮左侧色（浅） */
+      --accentB:#00d4ff;         /* 顶部按钮右侧色（浅） */
+      --text:#212529;
+      --muted:#6c757d;
+      --card:#ffffff;
+      --bg-grad-1:#e0f7fa;  /* 浅色背景渐变 */
+      --bg-grad-2:#ffffff;
+    }
+    *{box-sizing:border-box;font-family:'Montserrat',sans-serif}
+    body{
+      margin:0;
+      background:linear-gradient(180deg,var(--bg-grad-1) 0%,var(--bg-grad-2) 100%);
+      color:var(--text);
+      transition: background .5s ease, color .5s ease;
     }
 
-    #game-container {
-      text-align: center;
+    /* ========= 导航（与首页 index.html 风格一致） ========= */
+    nav{
+      background:transparent;
+      position:sticky;top:0;z-index:100;
+      padding:20px;display:flex;justify-content:center;align-items:center;
+      box-shadow:none;transition:background .3s ease, padding .3s ease;
+    }
+    nav.scrolled{
+      background:rgba(255,255,255,.8);
+      backdrop-filter:blur(10px);
+      padding:10px 20px;
+    }
+    nav ul{display:flex;list-style:none;gap:32px}
+    nav a{
+      color:inherit;text-decoration:none;font-size:16px;font-weight:500;position:relative;transition:color .3s ease;
+    }
+    nav a::after{
+      content:'';position:absolute;bottom:-4px;left:0;width:0;height:2px;
+      background:linear-gradient(90deg,var(--accentA),var(--accentB));transition:width .3s ease;
+    }
+    nav a:hover::after{width:100%}
+    #theme-toggle{
+      background:linear-gradient(135deg,var(--accentA),var(--accentB));
+      color:#fff;border:none;padding:8px 16px;border-radius:50px;cursor:pointer;font-size:14px;margin-left:32px;
+      transition:transform .3s ease, box-shadow .3s ease;
+    }
+    #theme-toggle:hover{ transform:scale(1.05); box-shadow:0 4px 12px rgba(0,123,255,.3) }
+
+    /* ========= 页面标题与操作区 ========= */
+    .hero{
+      text-align:center;padding:40px 20px;margin-bottom:10px;
+    }
+    .hero h1{
+      font:700 38px/1.2 'Exo',sans-serif;margin:0 0 10px;
+      background:linear-gradient(90deg,var(--accentA),var(--accentB));
+      -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+    }
+    .hero p{opacity:.8;margin:0}
+
+    .controls-bar{
+      max-width:980px;margin:0 auto 16px;padding:0 16px;
+      display:flex;gap:10px;justify-content:center;align-items:center;flex-wrap:wrap;
+    }
+    .pill{
+      background:linear-gradient(135deg,var(--accentA),var(--accentB));
+      color:#fff;border:none;padding:8px 16px;border-radius:50px;cursor:pointer;
+      font-size:14px;font-weight:600;transition:transform .3s ease, box-shadow .3s ease;
+    }
+    .pill:hover{ transform:scale(1.05); box-shadow:0 4px 12px rgba(0,123,255,.3) }
+    .select{
+      padding:8px 10px;border-radius:10px;border:1px solid rgba(0,0,0,.08);background:var(--card);
+    }
+    .status{ text-align:center;color:var(--muted);font-weight:700;margin:6px 0 10px }
+
+    /* ========= 棋盘容器 ========= */
+    #gomoku{ max-width:980px; margin:0 auto 36px; padding:0 16px }
+    .board-wrap{ position:relative; width:fit-content; margin:0 auto }
+    .board{
+      position:relative; display:grid; gap:0;
+      grid-template-columns:repeat(15,var(--cell));
+      grid-template-rows:repeat(15,var(--cell));
+      padding:var(--pad); border-radius:16px; isolation:isolate;
+      /* 浅色主题：极简柔灰 */
+      background: linear-gradient(180deg,#fafafa 0%,#f1f1f1 100%);
+      box-shadow: inset 0 8px 20px rgba(0,0,0,.05), 0 10px 22px rgba(0,0,0,.08);
+    }
+    .board::before{
+      content:""; position:absolute; inset:var(--pad);
+      background-image:
+        linear-gradient(to right, var(--line) 1px, transparent 1px),
+        linear-gradient(to bottom,var(--line) 1px, transparent 1px);
+      background-size:var(--cell) var(--cell), var(--cell) var(--cell);
+      pointer-events:none; border-radius:10px; opacity:.95
     }
 
-    #board {
-      display: none;
-      grid-template-columns: repeat(15, 40px);
-      grid-gap: 0;
-      background: linear-gradient(145deg, #b6863c, #8b5e2c);
-      padding: 15px;
-      border-radius: 12px;
-      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+    /* 单元格/棋子 —— 无鼠标预下影 */
+    .cell{ position:relative; width:var(--cell); height:var(--cell) }
+    .cell:hover::after{ content:none !important; } /* 彻底移除预下影 */
+    .cell.black::before, .cell.white::before{
+      content:""; position:absolute; inset:4px; border-radius:50%;
+      transform:translateY(-10px) scale(.9); opacity:0;
+      animation:drop .26s cubic-bezier(.22,.75,.22,1.05) forwards;
+    }
+    .cell.black::before{
+      background:radial-gradient(120% 120% at 35% 30%, #5a5a5a 0%, #1e1e1e 45%, #0a0a0a 100%);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.05), 0 4px 10px rgba(0,0,0,.38);
+    }
+    .cell.white::before{
+      background:radial-gradient(120% 120% at 35% 30%, #fff 0%, #efefef 50%, #dedede 100%);
+      box-shadow: inset 0 0 0 2px rgba(0,0,0,.09), 0 4px 10px rgba(0,0,0,.2);
     }
 
-    .cell {
-      width: 40px;
-      height: 40px;
-      background: #f7d488;
-      position: relative;
-      cursor: pointer;
-      border: 1px solid #d8a94f;
-      transition: background 0.3s;
+    /* 玩家/AI 最后一手光效（浅色主题下：玩家蓝、AI 蓝） */
+    .cell.last-move::after{
+      content:"";position:absolute;inset:2px;border-radius:50%;pointer-events:none;
+      box-shadow:0 0 0 5px rgba(0,123,255,.28), 0 0 14px 6px rgba(0,123,255,.35);
+      animation:breath 1.6s ease-in-out infinite; mix-blend-mode:soft-light;
     }
-    .cell:hover {
-      background: #fbe1a6;
-    }
-
-    /* 棋子样式 + 动画 */
-    .cell.black::after,
-    .cell.white::after {
-      content: '';
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      width: 80%;
-      height: 80%;
-      border-radius: 50%;
-      transform: translate(-50%, -50%) scale(0.3);
-      opacity: 0;
-      animation: drop 0.3s ease-out forwards;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+    .cell.ai-last-move::after{
+      content:"";position:absolute;inset:0;border-radius:50%;pointer-events:none;
+      /* —— 浅色主题蓝色呼吸，与顶部按钮一致 —— */
+      background: radial-gradient(circle at 50% 50%,
+                  rgba(0,123,255,.85) 0 34%,
+                  rgba(0,212,255,.22) 34% 52%,
+                  rgba(0,212,255,0) 52% 100%);
+      box-shadow: 0 0 0 5px rgba(0,123,255,.32),
+                  0 0 18px 8px rgba(0,123,255,.45),
+                  0 0 38px 16px rgba(0,212,255,.28);
+      filter:saturate(1.05); mix-blend-mode:screen;
+      animation: aiPulse 1.2s ease-in-out infinite, aiFlash 700ms ease-out 1; opacity:.95;
     }
 
-    @keyframes drop {
-      0%   { transform: translate(-50%, -50%) scale(0.3); opacity: 0; }
-      60%  { transform: translate(-50%, -50%) scale(1.1); opacity: 1; }
-      100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+    /* 胜利连线（浅色：蓝） */
+    .win-line{ position:absolute; inset:0; pointer-events:none }
+    .win-line line{
+      stroke:#0a84ff; stroke-width:5; stroke-linecap:round;
+      filter:drop-shadow(0 0 6px rgba(10,132,255,.55));
+      stroke-dasharray:440; stroke-dashoffset:440; animation:draw 420ms ease-out forwards;
     }
 
-    .cell.black::after {
-      background: radial-gradient(circle at 30% 30%, #444, #000);
+    @keyframes drop{to{transform:translateY(0) scale(1); opacity:1}}
+    @keyframes breath{0%,100%{opacity:.55}50%{opacity:.95}}
+    @keyframes aiPulse{0%{transform:scale(.92);opacity:.85}50%{transform:scale(1.05);opacity:1}100%{transform:scale(.92);opacity:.85}}
+    @keyframes aiFlash{
+      0%{box-shadow:0 0 0 0 rgba(0,123,255,.6), 0 0 0 0 rgba(0,212,255,.35), 0 0 0 0 rgba(0,212,255,.2)}
+      60%{box-shadow:0 0 0 10px rgba(0,123,255,0), 0 0 18px 10px rgba(0,123,255,.35), 0 0 38px 20px rgba(0,212,255,.25)}
+      100%{box-shadow:0 0 0 6px rgba(0,123,255,.32), 0 0 18px 8px rgba(0,123,255,.45), 0 0 38px 16px rgba(0,212,255,.28)}
     }
+    @keyframes draw{to{stroke-dashoffset:0}}
 
-    .cell.white::after {
-      background: radial-gradient(circle at 30% 30%, #fff, #ddd);
-      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    /* ========= 深色主题（与首页完全一致的切换语义） ========= */
+    body.dark-theme{
+      --line: rgba(255,255,255,.22);
+      --accentA:#FA4616; --accentB:#fc8003;
+      --text:#ffffff; --card:#121212; --muted:#b0b0b0;
+      --bg-grad-1:#000000; --bg-grad-2:#000000;
+      background:#000; color:#fff;
     }
+    body.dark-theme nav.scrolled{
+      background:rgba(0,0,0,.8);
+      backdrop-filter:blur(10px);
+    }
+    body.dark-theme nav a::after{
+      background:linear-gradient(90deg,#FA4616,#fc8003);
+      box-shadow:0 0 5px #FA4616;
+    }
+    body.dark-theme #theme-toggle{
+      background:linear-gradient(135deg,#FA4616,#fc8003);
+      box-shadow:0 0 8px #FA4616;
+    }
+    body.dark-theme #theme-toggle:hover{ box-shadow:0 0 12px #FA4616 }
 
-    #message {
-      margin-top: 20px;
-      font-size: 20px;
-      font-weight: bold;
-      padding: 10px 20px;
-      border-radius: 8px;
-      background: linear-gradient(90deg, #4CAF50, #66bb6a);
-      color: white;
-      display: none;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    /* 深色主题下：棋盘为暗金木纹，黑棋加金色描边更显眼；AI 光效橘色；胜利线橘色 */
+    body.dark-theme .board{
+      background:
+        radial-gradient(120% 100% at 18% 8%, #2a2018 0%, #1b1510 45%, #120e0b 100%),
+        repeating-linear-gradient(18deg, rgba(212,167,44,.07) 0 3px, rgba(0,0,0,.18) 3px 6px),
+        repeating-linear-gradient(-18deg, rgba(212,167,44,.05) 0 4px, rgba(0,0,0,.22) 4px 8px);
+      box-shadow: inset 0 10px 30px rgba(212,167,44,.08), 0 12px 30px rgba(0,0,0,.55);
     }
-
-    #reset-button {
-      margin-top: 15px;
-      padding: 12px 25px;
-      font-size: 16px;
-      cursor: pointer;
-      background: linear-gradient(90deg, #2196f3, #42a5f5);
-      color: white;
-      border: none;
-      border-radius: 25px;
-      display: none;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-      transition: transform 0.2s, background 0.3s;
+    /* 黑棋在暗色下更清晰：增加金色描边环与更强高光 */
+    body.dark-theme .cell.black::before{
+      background:radial-gradient(120% 120% at 35% 30%, #6a6a6a 0%, #242424 45%, #0a0a0a 100%);
+      box-shadow:
+        inset 0 0 0 1px rgba(255,255,255,.08),   /* 微内高光 */
+        0 0 0 2px rgba(212,167,44,.45),         /* 金色描边环（关键） */
+        0 6px 16px rgba(0,0,0,.66);             /* 更强立体阴影 */
     }
-    #reset-button:hover {
-      transform: scale(1.05);
-      background: linear-gradient(90deg, #1976d2, #1e88e5);
+    /* 白棋稍加对比，避免过亮溢出 */
+    body.dark-theme .cell.white::before{
+      box-shadow: inset 0 0 0 2px rgba(255,255,255,.10), 0 4px 12px rgba(0,0,0,.55);
     }
-
-    #start-screen {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      background: rgba(255, 255, 255, 0.95);
-      padding: 30px;
-      border-radius: 15px;
-      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
-      text-align: center;
+    /* 深色主题：AI 上一步光效 = 橘黄色，与顶部按钮一致 */
+    body.dark-theme .cell.ai-last-move::after{
+      background: radial-gradient(circle at 50% 50%,
+                  rgba(250,70,22,.88) 0 34%,
+                  rgba(252,128,3,.24) 34% 52%,
+                  rgba(252,128,3,0) 52% 100%);
+      box-shadow: 0 0 0 5px rgba(250,70,22,.35),
+                  0 0 18px 8px rgba(250,70,22,.55),
+                  0 0 38px 16px rgba(252,128,3,.30);
     }
-    #start-screen.hidden {
-      display: none;
-    }
-    #start-screen h1 {
-      margin-bottom: 25px;
-      font-size: 28px;
-      color: #333;
-    }
-
-    .difficulty-button {
-      margin: 10px;
-      padding: 12px 25px;
-      font-size: 18px;
-      cursor: pointer;
-      background: linear-gradient(90deg, #ff9800, #ffb74d);
-      color: white;
-      border: none;
-      border-radius: 25px;
-      position: relative;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-      transition: transform 0.2s, background 0.3s;
-    }
-    .difficulty-button:hover {
-      transform: scale(1.05);
-      background: linear-gradient(90deg, #ef6c00, #fb8c00);
-    }
-
-    .difficulty-tooltip {
-      display: none;
-      position: absolute;
-      bottom: -35px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: #333;
-      color: white;
-      padding: 6px 12px;
-      border-radius: 6px;
-      font-size: 14px;
-      white-space: nowrap;
-      z-index: 10;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-    }
-    .difficulty-button:hover .difficulty-tooltip {
-      display: block;
+    /* 深色主题：胜利线橘色 */
+    body.dark-theme .win-line line{
+      stroke:#FA4616; filter:drop-shadow(0 0 6px rgba(250,70,22,.6));
     }
   </style>
 </head>
 <body>
-  <div id="game-container">
-    <div id="board"></div>
-    <div id="message">轮到玩家 (黑棋)</div>
-    <button id="reset-button" onclick="resetGame()">重新开始</button>
+  <!-- 导航栏（与首页同结构/同样式与按钮 id） -->
+  <nav role="navigation">
+    <ul>
+      <li><a href="/index.html">Home</a></li>
+      <li><a href="/tetris.html">Tetris</a></li>
+      <li><a href="/Games/snake.html">Snake</a></li>
+      <li><a href="/flappy.html">Flappy Bird</a></li>
+      <li><a href="/Games/maze.html">Maze</a></li>
+      <li><a href="/chess.html">Gomoku</a></li>
+    </ul>
+    <button id="theme-toggle" aria-label="Toggle theme">Toggle Theme</button>
+  </nav>
+
+  <section class="hero">
+    <h1>Gomoku · Connect 5</h1>
+    <p>Connect five in a row. Clean visuals · Smooth animations · Smart AI.</p>
+  </section>
+
+  <div class="controls-bar">
+    <label for="difficulty-select" style="display:none">Difficulty</label>
+    <select id="difficulty-select" class="select" title="Difficulty">
+      <option value="easy">Easy</option>
+      <option value="medium" selected>Medium</option>
+      <option value="hard">Hard</option>
+    </select>
+    <button id="new-game" class="pill">New Game</button>
   </div>
-  <div id="start-screen">
-    <h1>五子棋 - 选择难度</h1>
-    <button id="easy" class="difficulty-button">简单
-      <!-- 这里已改为 5 -->
-      <span class="difficulty-tooltip">Connect 5 dots in a row to win!</span>
-    </button>
-    <button id="medium" class="difficulty-button">适中
-      <span class="difficulty-tooltip">Connect 5 dots in a row to win!</span>
-    </button>
-    <button id="hard" class="difficulty-button">困难
-      <span class="difficulty-tooltip">Compete with professional Olympic player!</span>
-    </button>
-  </div>
-  <!-- 你的逻辑代码 -->
-  <script src="/JS_Codes/chess.js"></script>
+  <div class="status"><span id="message">Your turn (Black)</span></div>
+
+  <section id="gomoku" aria-label="Gomoku">
+    <div class="board-wrap">
+      <svg class="win-line" id="win-svg"></svg>
+      <div id="board" class="board"></div>
+    </div>
+  </section>
+
+  <script defer src="/JS_Codes/chess.js"></script>
+  <script>
+    // —— 与首页一致的主题切换行为 —— //
+    let currentTheme = 'light';
+    document.getElementById('theme-toggle').addEventListener('click', () => {
+      document.body.classList.toggle('dark-theme');
+      currentTheme = document.body.classList.contains('dark-theme') ? 'dark' : 'light';
+    });
+    // 导航滚动效果（与首页一致）
+    window.addEventListener('scroll', () => {
+      const nav = document.querySelector('nav');
+      if (window.scrollY > 100) nav.classList.add('scrolled'); else nav.classList.remove('scrolled');
+    });
+  </script>
 </body>
 </html>

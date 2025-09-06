@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Play classic retro games like Tetris, Snake, Flappy Bird, and Maze online. Discover reimagined classics in a modern interface.">
+  <meta name="description" content="Play classic retro games like Tetris, Snake, Chess (Gomoku), and Maze online. Discover reimagined classics in a modern interface.">
   <title>Retro Index</title>
   <link href="https://fonts.googleapis.com/css2?family=Exo:wght@700&family=Montserrat:wght@400;500;700&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.2/p5.min.js"></script>
@@ -339,7 +339,7 @@
       <li><a href="/index.html">Home</a></li>
       <li><a href="/tetris.html">Tetris</a></li>
       <li><a href="/Games/snake.html">Snake</a></li>
-      <li><a href="/flappy.html">Flappy Bird</a></li>
+      <li><a href="/chess.html">Chess (Gomoku)</a></li><!-- changed -->
       <li><a href="/Games/maze.html">Maze</a></li>
     </ul>
     <button id="theme-toggle" aria-label="Toggle theme">Toggle Theme</button>
@@ -363,11 +363,11 @@
       <p>Grow by eating, avoid collisions.</p>
       <a href="/Games/snake.html">Play</a>
     </div>
-    <div class="game-card" style="--card-index: 2">
-      <div class="thumbnail-canvas" id="flappy-canvas"></div>
-      <h2>Flappy Bird</h2>
-      <p>Navigate pipes with precise flaps.</p>
-      <a href="/flappy.html">Play</a>
+    <div class="game-card" style="--card-index: 2"><!-- replaced -->
+      <div class="thumbnail-canvas" id="gomoku-canvas"></div>
+      <h2>Chess (Gomoku)</h2>
+      <p>Connect 5 in a row to win.</p>
+      <a href="/Games/chess.html">Play</a>
     </div>
     <div class="game-card" style="--card-index: 3">
       <div class="thumbnail-canvas" id="maze-canvas"></div>
@@ -450,20 +450,88 @@
       };
     };
 
-    // Flappy Bird Thumbnail
-    const flappySketch = (p) => {
+    // Gomoku (Chess) Thumbnail  —— new
+    const gomokuSketch = (p) => {
+      const SIZE = 160;
+      const GRID = 15;
+      const MARGIN = 12;
+      let CELL;
+      const STONE_RATIO = 0.7; // 棋子相对格距的直径比例
+
+      // 预置一组演示落子（黑先白后），循环播放
+      const moves = [
+        { x: 7, y: 7, c: 0 },  // 黑
+        { x: 8, y: 7, c: 1 },  // 白
+        { x: 6, y: 8, c: 0 },  // 黑
+        { x: 8, y: 8, c: 1 },  // 白
+        { x: 9, y: 8, c: 0 },  // 黑
+        { x: 7, y: 8, c: 1 },  // 白
+        { x: 7, y: 9, c: 0 }   // 黑（演示形成威胁）
+      ];
+
       p.setup = () => {
-        p.createCanvas(160, 160);
-        p.frameRate(60);
+        p.createCanvas(SIZE, SIZE);
+        p.frameRate(30);
+        CELL = (SIZE - 2 * MARGIN) / (GRID - 1);
       };
 
       p.draw = () => {
+        // 背景：浅色/深色
         p.background(currentTheme === 'light' ? 255 : 0);
-        p.fill(currentTheme === 'light' ? '#007bff' : '#FA4616');
-        p.rect(100, 20, 30, 60);
-        p.rect(100, 100, 30, 60);
-        p.fill('#ffd700');
-        p.ellipse(50, 80 + 8 * p.sin(p.millis() / 400), 16, 16);
+
+        // 棋盘底色
+        p.noStroke();
+        p.fill(currentTheme === 'light' ? p.color(216, 178, 140, 140) : p.color(32, 32, 32, 160));
+        p.rect(6, 6, SIZE - 12, SIZE - 12, 12);
+
+        // 网格线
+        p.stroke(currentTheme === 'light' ? 80 : 200);
+        p.strokeWeight(1);
+        for (let i = 0; i < GRID; i++) {
+          const pos = MARGIN + i * CELL;
+          p.line(MARGIN, pos, SIZE - MARGIN, pos);
+          p.line(pos, MARGIN, pos, SIZE - MARGIN);
+        }
+
+        // 星位（9 路点）
+        const stars = [3, 7, 11];
+        p.fill(currentTheme === 'light' ? 60 : 220);
+        p.noStroke();
+        for (let iy of stars) for (let ix of stars) {
+          p.circle(MARGIN + ix * CELL, MARGIN + iy * CELL, 3);
+        }
+
+        // 根据时间推进显示多少步
+        const step = (Math.floor(p.millis() / 700) % moves.length) + 1;
+        const radius = STONE_RATIO * CELL * 0.5;
+
+        // 画棋子
+        for (let i = 0; i < step; i++) {
+          const m = moves[i];
+          if (!m) break;
+          const cx = MARGIN + m.x * CELL;
+          const cy = MARGIN + m.y * CELL;
+
+          // 棋子底
+          p.noStroke();
+          if (m.c === 0) { // 黑
+            p.fill(currentTheme === 'light' ? 20 : 235);
+          } else { // 白
+            p.fill(currentTheme === 'light' ? 240 : 15);
+            p.stroke(currentTheme === 'light' ? 0 : 255);
+            p.strokeWeight(0.6);
+          }
+          p.circle(cx, cy, radius * 2);
+
+          // 高亮最后一步：呼吸光环
+          if (i === step - 1) {
+            const pulse = 0.5 + 0.5 * Math.sin(p.millis() / 300);
+            p.noFill();
+            p.stroke(currentTheme === 'light' ? '#007bff' : '#FA4616');
+            p.strokeWeight(1 + pulse * 1.5);
+            p.circle(cx, cy, radius * (2.6 + 0.2 * pulse));
+          }
+        }
       };
     };
 
@@ -514,7 +582,7 @@
     // Initialize p5.js Instances
     new p5(tetrisSketch, 'tetris-canvas');
     new p5(snakeSketch, 'snake-canvas');
-    new p5(flappySketch, 'flappy-canvas');
+    new p5(gomokuSketch, 'gomoku-canvas'); // new
     new p5(mazeSketch, 'maze-canvas');
   </script>
 </body>
