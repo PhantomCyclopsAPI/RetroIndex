@@ -1,138 +1,115 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Play classic retro games like Tetris, Snake, Flappy Bird, Maze, and Gomoku online. Discover reimagined classics in a modern interface.">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="description" content="Play Snake and Gomoku online. Minimal gradient style with smooth animations and dark mode."/>
   <title>Retro Index</title>
   <link href="https://fonts.googleapis.com/css2?family=Exo:wght@700&family=Montserrat:wght@400;500;700&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.2/p5.min.js"></script>
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Montserrat', sans-serif; }
+    * { margin:0; padding:0; box-sizing:border-box; font-family:'Montserrat',sans-serif; }
+    body{
+      background:linear-gradient(180deg,#e0f7fa 0%,#ffffff 100%);
+      color:#212529; overflow-x:hidden;
+      transition:background .5s ease,color .5s ease; animation:fadeIn 1.5s ease-in-out;
+    }
+    @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 
-    body {
-      background: linear-gradient(180deg, #e0f7fa 0%, #ffffff 100%);
-      color: #212529;
-      overflow-x: hidden;
-      transition: background 0.5s ease, color 0.5s ease;
-      animation: fadeIn 1.5s ease-in-out;
+    nav{
+      background:transparent; position:sticky; top:0; z-index:100;
+      padding:20px; display:flex; justify-content:center; align-items:center;
+      transition:background .3s ease,padding .3s ease;
     }
+    nav.scrolled{background:rgba(255,255,255,.8); backdrop-filter:blur(10px); padding:10px 20px;}
+    nav ul{display:flex; list-style:none; gap:32px;}
+    nav a{color:inherit; text-decoration:none; font-size:16px; font-weight:500; position:relative;}
+    nav a::after{
+      content:''; position:absolute; bottom:-4px; left:0; width:0; height:2px;
+      background:linear-gradient(90deg,#007bff,#00d4ff); transition:width .3s ease;
+    }
+    nav a:hover::after{width:100%}
+    #theme-toggle{
+      background:linear-gradient(135deg,#007bff,#00d4ff); color:#fff; border:none;
+      padding:8px 16px; border-radius:50px; cursor:pointer; font-size:14px; margin-left:32px;
+      transition:transform .3s ease, box-shadow .3s ease;
+    }
+    #theme-toggle:hover{transform:scale(1.05); box-shadow:0 4px 12px rgba(0,123,255,.3)}
 
-    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    .hero{
+      text-align:center; padding:80px 20px; background:linear-gradient(135deg,#e0f7fa 0%,#ffffff 100%);
+      color:#212529; margin-bottom:60px; border-radius:0 0 32px 32px;
+      box-shadow:0 8px 24px rgba(0,0,0,.05);
+    }
+    .hero h1{
+      font-size:42px; font-weight:700; margin-bottom:12px; font-family:'Exo',sans-serif;
+      background:linear-gradient(90deg,#007bff,#00d4ff);
+      -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+    }
+    .hero p{font-size:18px; max-width:500px; margin:0 auto; opacity:.8}
 
-    nav {
-      background: transparent;
-      position: sticky; top: 0; z-index: 100;
-      padding: 20px; display: flex; justify-content: center; align-items: center;
-      box-shadow: none; transition: background 0.3s ease, padding 0.3s ease;
+    .game-grid{
+      display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr));
+      gap:40px; max-width:1000px; margin:0 auto; padding:40px 20px;
     }
-    nav.scrolled {
-      background: rgba(255, 255, 255, 0.8);
-      backdrop-filter: blur(10px);
-      padding: 10px 20px;
+    .game-card{
+      background:#fff; border-radius:24px; overflow:hidden;
+      box-shadow:0 12px 32px rgba(0,0,0,.1);
+      transition:transform .4s ease, box-shadow .4s ease, opacity .6s ease-out;
+      text-align:center; padding:24px; opacity:0; transform:translateY(30px);
     }
-    nav ul { display: flex; list-style: none; gap: 32px; }
-    nav a {
-      color: inherit; text-decoration: none; font-size: 16px; font-weight: 500; position: relative; transition: color 0.3s ease;
-    }
-    nav a::after {
-      content: ''; position: absolute; bottom: -4px; left: 0; width: 0; height: 2px;
-      background: linear-gradient(90deg, #007bff, #00d4ff); transition: width 0.3s ease;
-    }
-    nav a:hover::after { width: 100%; }
+    .game-card.visible{opacity:1; transform:translateY(0)}
+    .game-card:hover{transform:translateY(-12px) scale(1.03); box-shadow:0 16px 48px rgba(0,0,0,.15)}
 
-    #theme-toggle {
-      background: linear-gradient(135deg, #007bff, #00d4ff);
-      color: #ffffff; border: none; padding: 8px 16px; border-radius: 50px; cursor: pointer;
-      font-size: 14px; margin-left: 32px; transition: transform 0.3s ease, box-shadow 0.3s ease;
+    .thumbnail-canvas{
+      width:160px; height:160px; margin:0 auto 20px; border-radius:16px; overflow:hidden;
+      box-shadow:0 4px 12px rgba(0,0,0,.1); transition:transform .4s ease, box-shadow .4s ease;
     }
-    #theme-toggle:hover { transform: scale(1.05); box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3); }
+    .game-card.visible .thumbnail-canvas{transform:scale(1.05); box-shadow:0 8px 24px rgba(0,123,255,.2)}
+    .thumbnail-canvas canvas{width:100% !important; height:100% !important; display:block;}
 
-    .hero {
-      text-align: center; padding: 80px 20px;
-      background: linear-gradient(135deg, #e0f7fa 0%, #ffffff 100%);
-      color: #212529; margin-bottom: 60px; border-radius: 0 0 32px 32px;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05); transition: background 0.5s ease;
+    .game-card h2{font-size:24px; font-weight:700; margin-bottom:8px; font-family:'Exo',sans-serif;}
+    .game-card p{font-size:14px; color:#6c757d; margin-bottom:16px;}
+    .game-card a{
+      display:inline-block; background:linear-gradient(135deg,#007bff,#00d4ff);
+      color:#fff; padding:10px 24px; border-radius:50px; text-decoration:none; font-weight:500;
+      transition:transform .3s ease, box-shadow .3s ease;
     }
-    .hero h1 {
-      font-size: 42px; font-weight: 700; margin-bottom: 12px; font-family: 'Exo', sans-serif;
-      background: linear-gradient(90deg, #007bff, #00d4ff);
-      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-    }
-    .hero p { font-size: 18px; max-width: 500px; margin: 0 auto; opacity: 0.8; }
+    .game-card a:hover{transform:scale(1.05); box-shadow:0 4px 12px rgba(0,123,255,.4)}
 
-    .game-grid {
-      display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-      gap: 40px; max-width: 1200px; margin: 0 auto; padding: 40px 20px;
+    /* Dark theme */
+    body.dark-theme{background:#000; color:#fff}
+    body.dark-theme nav.scrolled{background:rgba(0,0,0,.8); backdrop-filter:blur(10px)}
+    body.dark-theme nav a::after{background:linear-gradient(90deg,#FA4616,#fc8003); box-shadow:0 0 5px #FA4616}
+    body.dark-theme #theme-toggle{background:linear-gradient(135deg,#FA4616,#fc8003); box-shadow:0 0 8px #FA4616}
+    body.dark-theme #theme-toggle:hover{box-shadow:0 0 12px #FA4616}
+    body.dark-theme .hero{background:#000; box-shadow:0 8px 24px rgba(250,70,22,.1)}
+    body.dark-theme .hero h1{
+      background:linear-gradient(90deg,#FA4616,#fc8003);
+      -webkit-background-clip:text; -webkit-text-fill-color:transparent;
     }
-    .game-card {
-      background: #ffffff; border-radius: 24px; overflow: hidden;
-      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.1);
-      transition: transform 0.4s ease, box-shadow 0.4s ease, opacity 0.6s ease-out, transform 0.6s ease-out;
-      text-align: center; padding: 24px; border: none; opacity: 0; transform: translateY(30px);
-      will-change: transform, opacity;
-    }
-    .game-card.visible { opacity: 1; transform: translateY(0); transition-delay: calc(var(--card-index) * 0.1s); }
-    .game-card:hover { transform: translateY(-12px) scale(1.03); box-shadow: 0 16px 48px rgba(0, 0, 0, 0.15); }
+    body.dark-theme .game-card{background:#121212; box-shadow:0 12px 32px rgba(250,70,22,.1)}
+    body.dark-theme .game-card:hover{box-shadow:0 16px 48px rgba(250,70,22,.2)}
+    body.dark-theme .game-card.visible .thumbnail-canvas{box-shadow:0 8px 24px rgba(250,70,22,.3)}
+    body.dark-theme .game-card p{color:#c7c7c7}
+    body.dark-theme .game-card a{background:linear-gradient(135deg,#FA4616,#fc8003); box-shadow:0 0 8px #FA4616}
+    body.dark-theme .game-card a:hover{box-shadow:0 0 12px #FA4616}
 
-    .thumbnail-canvas {
-      width: 160px; height: 160px; margin: 0 auto 20px; border-radius: 16px; overflow: hidden;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); transition: transform 0.4s ease, box-shadow 0.4s ease;
+    @media (max-width:768px){
+      .hero{padding:60px 20px}
+      .hero h1{font-size:32px}
+      .hero p{font-size:16px}
+      nav ul{gap:20px; flex-wrap:wrap; justify-content:center}
+      nav a{font-size:14px}
+      #theme-toggle{margin-left:0; margin-top:12px}
+      .game-grid{grid-template-columns:1fr; gap:32px; padding:20px}
+      .thumbnail-canvas{width:140px; height:140px}
     }
-    .game-card.visible .thumbnail-canvas { transform: scale(1.05); box-shadow: 0 8px 24px rgba(0, 123, 255, 0.2); }
-    .thumbnail-canvas canvas { width: 100% !important; height: 100% !important; display: block; }
-
-    .game-card h2 { font-size: 24px; font-weight: 700; margin-bottom: 8px; font-family: 'Exo', sans-serif; }
-    .game-card p { font-size: 14px; color: #6c757d; margin-bottom: 16px; }
-    .game-card a {
-      display: inline-block; background: linear-gradient(135deg, #007bff, #00d4ff);
-      color: #ffffff; padding: 10px 24px; border-radius: 50px; text-decoration: none; font-weight: 500;
-      transition: transform 0.3s ease, box-shadow 0.3s ease;
-    }
-    .game-card a:hover { transform: scale(1.05); box-shadow: 0 4px 12px rgba(0, 123, 255, 0.4); }
-
-    body.dark-theme { background: #000000; color: #ffffff; }
-    body.dark-theme nav.scrolled { background: rgba(0, 0, 0, 0.8); backdrop-filter: blur(10px); }
-    body.dark-theme nav a::after {
-      background: linear-gradient(90deg, #FA4616, #fc8003); box-shadow: 0 0 5px #FA4616;
-    }
-    body.dark-theme #theme-toggle {
-      background: linear-gradient(135deg, #FA4616, #fc8003); box-shadow: 0 0 8px #FA4616;
-    }
-    body.dark-theme #theme-toggle:hover { box-shadow: 0 0 12px #FA4616; }
-
-    body.dark-theme .hero { background: #000000; box-shadow: 0 8px 24px rgba(250, 70, 22, 0.1); }
-    body.dark-theme .hero h1 {
-      font-family: 'Exo', sans-serif; font-size: 42px; font-weight: 700; margin-bottom: 12px;
-      background: linear-gradient(90deg, #FA4616, #fc8003); -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-    }
-    body.dark-theme .hero p { opacity: 0.8; }
-
-    body.dark-theme .game-card { background: #121212; box-shadow: 0 12px 32px rgba(250, 70, 22, 0.1); }
-    body.dark-theme .game-card:hover { box-shadow: 0 16px 48px rgba(250, 70, 22, 0.2); }
-    body.dark-theme .game-card.visible .thumbnail-canvas { box-shadow: 0 8px 24px rgba(250, 70, 22, 0.3); }
-    body.dark-theme .game-card p { color: #b0b0b0; }
-    body.dark-theme .game-card a {
-      background: linear-gradient(135deg, #FA4616, #fc8003); box-shadow: 0 0 8px #FA4616;
-    }
-    body.dark-theme .game-card a:hover { box-shadow: 0 0 12px #FA4616; }
-
-    @media (max-width: 768px) {
-      .hero { padding: 60px 20px; }
-      .hero h1 { font-size: 32px; }
-      .hero p { font-size: 16px; }
-      nav ul { gap: 20px; flex-wrap: wrap; justify-content: center; }
-      nav a { font-size: 14px; }
-      #theme-toggle { margin-left: 0; margin-top: 12px; }
-      .game-grid { grid-template-columns: 1fr; gap: 32px; padding: 20px; }
-      .thumbnail-canvas { width: 140px; height: 140px; }
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-      .game-card, .thumbnail-canvas, .game-card a, #theme-toggle, nav { transition: none; }
-      .game-card.visible { transform: none; opacity: 1; transition-delay: 0s; }
-      .game-card.visible .thumbnail-canvas { transform: none; }
-      nav.scrolled { transition: none; }
+    @media (prefers-reduced-motion:reduce){
+      .game-card,.thumbnail-canvas,.game-card a,#theme-toggle,nav{transition:none}
+      .game-card.visible{transform:none; opacity:1}
+      .game-card.visible .thumbnail-canvas{transform:none}
+      nav.scrolled{transition:none}
     }
   </style>
 </head>
@@ -140,13 +117,10 @@
   <nav role="navigation">
     <ul>
       <li><a href="/index.html">Home</a></li>
-      <li><a href="/tetris.html">Tetris</a></li>
       <li><a href="/Games/snake.html">Snake</a></li>
-      <li><a href="/flappy.html">Flappy Bird</a></li>
-      <li><a href="/Games/maze.html">Maze</a></li>
       <li><a href="/Games/Gomoku.html">Gomoku</a></li>
     </ul>
-    <button id="theme-toggle" aria-label="Toggle theme">Toggle Theme</button>
+    <button id="theme-toggle" aria-label="Toggle theme" aria-pressed="false">Toggle Theme</button>
   </nav>
 
   <section class="hero">
@@ -154,250 +128,239 @@
     <p>Discover classic games reimagined in a modern light.</p>
   </section>
 
-  <div class="game-grid">
-    <div class="game-card" style="--card-index: 0">
-      <div class="thumbnail-canvas" id="tetris-canvas"></div>
-      <h2>Tetris</h2>
-      <p>Stack and clear blocks strategically.</p>
-      <a href="/tetris.html">Play</a>
-    </div>
-
-    <div class="game-card" style="--card-index: 1">
+  <main class="game-grid" aria-label="Game list">
+    <article class="game-card" style="--card-index:0">
       <div class="thumbnail-canvas" id="snake-canvas"></div>
       <h2>Snake</h2>
-      <p>Grow by eating, avoid collisions.</p>
-      <a href="/Games/snake.html">Play</a>
-    </div>
+      <p>Minimal gradient blocks.</p>
+      <a href="/Games/snake.html" aria-label="Play Snake on Retro Index">Play</a>
+    </article>
 
-    <div class="game-card" style="--card-index: 2">
-      <div class="thumbnail-canvas" id="flappy-canvas"></div>
-      <h2>Flappy Bird</h2>
-      <p>Navigate pipes with precise flaps.</p>
-      <a href="/flappy.html">Play</a>
-    </div>
-
-    <div class="game-card" style="--card-index: 3">
-      <div class="thumbnail-canvas" id="maze-canvas"></div>
-      <h2>Maze</h2>
-      <p>Navigate through intricate mazes to reach the goal.</p>
-      <a href="/Games/maze.html">Play</a>
-    </div>
-
-    <!-- NEW: Gomoku card -->
-    <div class="game-card" style="--card-index: 4">
+    <article class="game-card" style="--card-index:1">
       <div class="thumbnail-canvas" id="gomoku-canvas"></div>
       <h2>Gomoku</h2>
-      <p>Connect five in a row. Smart AI with smooth visuals.</p>
-      <a href="/Games/Gomoku.html">Play</a>
-    </div>
-  </div>
+      <p>Connect five in a row.</p>
+      <a href="/Games/Gomoku.html" aria-label="Play Gomoku on Retro Index">Play</a>
+    </article>
+  </main>
 
   <script>
-    let currentTheme = 'light';
-
-    // Theme Toggle (same behavior/site-wide palette swap)
-    document.getElementById('theme-toggle').addEventListener('click', () => {
-      document.body.classList.toggle('dark-theme');
-      currentTheme = document.body.classList.contains('dark-theme') ? 'dark' : 'light';
+    // ---------- Theme ----------
+    const THEME_KEY='retroIndexTheme';
+    function applyTheme(t){
+      const dark=t==='dark';
+      document.body.classList.toggle('dark-theme',dark);
+      document.getElementById('theme-toggle').setAttribute('aria-pressed',String(dark));
+    }
+    (function(){
+      const saved=localStorage.getItem(THEME_KEY);
+      const prefersDark=window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches;
+      applyTheme(saved || (prefersDark?'dark':'light'));
+    })();
+    document.getElementById('theme-toggle').addEventListener('click',()=>{
+      const dark=!document.body.classList.contains('dark-theme');
+      applyTheme(dark?'dark':'light');
+      localStorage.setItem(THEME_KEY,dark?'dark':'light');
+      window.__redrawThumbnails && window.__redrawThumbnails();
     });
 
-    // Scroll Animation for Navigation
-    window.addEventListener('scroll', () => {
-      const nav = document.querySelector('nav');
-      if (window.scrollY > 100) {
-        nav.classList.add('scrolled');
-      } else {
-        nav.classList.remove('scrolled');
+    // ---------- Nav scroll ----------
+    let ticking=false;
+    window.addEventListener('scroll',()=>{
+      if(!ticking){
+        window.requestAnimationFrame(()=>{
+          const nav=document.querySelector('nav');
+          if(window.scrollY>100) nav.classList.add('scrolled'); else nav.classList.remove('scrolled');
+          ticking=false;
+        }); ticking=true;
       }
     });
 
-    // Staggered reveal for cards
-    const observer = new IntersectionObserver(entries => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add('visible');
-          observer.unobserve(entry.target);
+    // ---------- Card reveal ----------
+    const observer=new IntersectionObserver(entries=>{
+      entries.forEach(e=>{ if(e.isIntersecting){ e.target.classList.add('visible'); observer.unobserve(e.target);} });
+    },{threshold:0.2});
+    document.querySelectorAll('.game-card').forEach(card=>observer.observe(card));
+
+    // ---------- p5 helpers ----------
+    const currentTheme=()=>document.body.classList.contains('dark-theme')?'dark':'light';
+
+    // ===== Snake：极简渐变风（整条蛇渐变、无内层渐变与描边）+ 极简背景 =====
+    const snakeSketch=(p)=>{
+      const TILE=20, W=160, H=160, COLS=W/TILE|0, ROWS=H/TILE|0;
+      const X0=1, X1=6, Y0=1, Y1=6; // 巡航范围
+
+      // 路径：行内往返 + 左侧竖直回程（闭环）
+      function makeRoute(){
+        const r=[];
+        for(let y=Y0;y<=Y1;y++){
+          if((y-Y0)%2===0){ for(let x=X0;x<=X1;x++) r.push({x,y}); }
+          else{ for(let x=X1;x>=X0;x--) r.push({x,y}); }
         }
-      });
-    }, { threshold: 0.2 });
-    document.querySelectorAll('.game-card').forEach(card => observer.observe(card));
+        for(let y=Y1-1;y>=Y0;y--) r.push({x:X0,y});
+        return r;
+      }
+      const ROUTE=makeRoute(), RLEN=ROUTE.length;
 
-    // Tetris Thumbnail
-    const tetrisSketch = (p) => {
-      p.setup = () => { p.createCanvas(160, 160); p.frameRate(10); };
-      p.draw = () => {
-        p.background(currentTheme === 'light' ? 255 : 0);
-        p.fill(currentTheme === 'light' ? '#007bff' : '#FA4616');
-        p.rect(40, 40, 20, 20);
-        p.rect(40, 60, 20, 20);
-        p.rect(40, 80, 20, 20);
-        p.rect(60, 80, 20, 20);
-      };
-    };
+      function posOnRoute(u){
+        const uWrap=((u%RLEN)+RLEN)%RLEN;
+        const i=Math.floor(uWrap), t=uWrap-i;
+        const a=ROUTE[i], b=ROUTE[(i+1)%RLEN];
+        return {x: a.x+(b.x-a.x)*t, y: a.y+(b.y-a.y)*t};
+      }
 
-    // Snake Thumbnail
-    const snakeSketch = (p) => {
-      let snake = [{ x: 2, y: 2 }, { x: 2, y: 3 }, { x: 2, y: 4 }];
-      let food = { x: 5, y: 5 };
-      const TILE_SIZE = 20;
-      p.setup = () => { p.createCanvas(160, 160); p.frameRate(10); };
-      p.draw = () => {
-        p.background(currentTheme === 'light' ? 255 : 0);
-        p.fill('#ff5c00');
-        p.ellipse(food.x * TILE_SIZE + TILE_SIZE / 2, food.y * TILE_SIZE + TILE_SIZE / 2, TILE_SIZE * 0.6);
-        p.fill(currentTheme === 'light' ? '#007bff' : '#FA4616');
-        for (let seg of snake) { p.rect(seg.x * TILE_SIZE, seg.y * TILE_SIZE, TILE_SIZE, TILE_SIZE); }
-      };
-    };
+      const SPEED=3.0;       // tiles/sec
+      const SEG_SPACING=0.7; // 段间距
+      let length=6;          // 段数
 
-    // Flappy Bird Thumbnail
-    const flappySketch = (p) => {
-      p.setup = () => { p.createCanvas(160, 160); p.frameRate(60); };
-      p.draw = () => {
-        p.background(currentTheme === 'light' ? 255 : 0);
-        p.fill(currentTheme === 'light' ? '#007bff' : '#FA4616');
-        p.rect(100, 20, 30, 60);
-        p.rect(100, 100, 30, 60);
-        p.fill('#ffd700');
-        p.ellipse(50, 80 + 8 * p.sin(p.millis() / 400), 16, 16);
-      };
-    };
+      let uHead=0, lastMillis=0;
 
-    // Maze Thumbnail
-    const mazeSketch = (p) => {
-      const TILE_SIZE = 20;
-      const GRID_SIZE = 8;
-      const maze = [
-        ['#', '#', '#', '#', '#', '#', '#', '#'],
-        ['#', 'S', '.', '.', '.', '.', '.', '#'],
-        ['#', '.', '#', '#', '#', '.', '#', '#'],
-        ['#', '.', '.', '.', '#', '.', '.', '#'],
-        ['#', '#', '#', '.', '#', '#', '.', '#'],
-        ['#', '.', '.', '.', '.', '.', '.', '#'],
-        ['#', '.', '#', '#', '#', '#', 'G', '#'],
-        ['#', '#', '#', '#', '#', '#', '#', '#']
-      ];
-      p.setup = () => { p.createCanvas(160, 160); p.frameRate(10); };
-      p.draw = () => {
-        p.background(currentTheme === 'light' ? 255 : 0);
+      // 极简背景：纯底 + 细网格线
+      function drawBoard(){
+        p.background(currentTheme()==='light' ? 255 : 0);
+        const gridCol = currentTheme()==='light' ? p.color(0,0,0,80) : p.color(255,255,255,60);
+        p.stroke(gridCol); p.strokeWeight(1);
+        for(let i=0;i<=COLS;i++) p.line(i*TILE,0,i*TILE,H);
+        for(let j=0;j<=ROWS;j++) p.line(0,j*TILE,W,j*TILE);
+      }
+
+      // 可选的小食物点（点缀）
+      function drawFood(){
+        const FOOD_AHEAD=4.0;
+        const f=posOnRoute(uHead+FOOD_AHEAD);
+        p.noStroke(); p.fill('#ff5c00');
+        p.rect(Math.floor(f.x)*TILE+4, Math.floor(f.y)*TILE+4, TILE-8, TILE-8, 4);
+      }
+
+      // —— 关键修改：整条蛇“头→尾”渐变，方块不透明、无内层渐变与描边 —— //
+      function drawSnake(){
+        const GAP=4;  // 与格线的留白
+        const R=3;    // 小圆角
+        // 头/尾基色：不透明，避免与网格叠加产生亮度跳变
+        const head = currentTheme()==='light' ? p.color(0,123,255) : p.color(250,70,22);
+        const tail = p.lerpColor(head, p.color(255,255,255), 0.55); // 更浅同色系
+
         p.noStroke();
-        p.fill(currentTheme === 'light' ? '#808080' : '#b0b0b0');
-        for (let y = 0; y < GRID_SIZE; y++) {
-          for (let x = 0; x < GRID_SIZE; x++) {
-            if (maze[y][x] === '#') { p.rect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE); }
-          }
+        for(let i=length-1;i>=0;i--){
+          const u = uHead - i*SEG_SPACING;
+          const pos = posOnRoute(u);
+
+          // 极简块风：对齐到最近格子（保持“块感”）
+          const gx=Math.round(pos.x), gy=Math.round(pos.y);
+          const x=gx*TILE + GAP/2, y=gy*TILE + GAP/2, w=TILE-GAP, h=TILE-GAP;
+
+          // 沿蛇身渐变：尾(0)→头(1)
+          const t = p.constrain(1 - i/(length-1 || 1), 0, 1);
+          const col = p.lerpColor(tail, head, t);
+          p.fill(col);
+          p.rect(x, y, w, h, R);
         }
-        p.fill(currentTheme === 'light' ? '#007bff' : '#FA4616');
-        p.rect(1 * TILE_SIZE, 1 * TILE_SIZE, TILE_SIZE, TILE_SIZE);
-        p.fill('#00ff00'); p.rect(6 * TILE_SIZE, 6 * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+      }
+
+      p.setup=()=>{
+        p.createCanvas(W,H);
+        p.pixelDensity(window.devicePixelRatio||1);
+        p.frameRate(60);
+        lastMillis=p.millis();
+      };
+
+      p.draw=()=>{
+        const now=p.millis();
+        const dt=Math.min(.05, Math.max(0,(now-lastMillis)/1000)); lastMillis=now;
+        uHead += SPEED*dt;
+
+        drawBoard();
+        drawFood();
+        drawSnake();
+      };
+
+      p.redrawOnce=()=>{
+        drawBoard(); drawFood(); drawSnake();
       };
     };
 
-    // NEW: Gomoku (Connect Five) Thumbnail
-    const gomokuSketch = (p) => {
-      const SIZE = 160, PAD = 16, GRID = 9;
-      const step = (SIZE - PAD * 2) / (GRID - 1);
-      const stones = [ [2,2,'black'], [3,3,'white'], [4,4,'black'], [5,5,'white'], [6,6,'black'] ];
-      let lastIdx = 0;
+    // ===== Gomoku（保持不变）=====
+    const gomokuSketch=(p)=>{
+      const SIZE=160, PAD=16, GRID=9;
+      const step=(SIZE-PAD*2)/(GRID-1);
+      const stones=[[2,2,'black'],[3,3,'white'],[4,4,'black'],[5,5,'white'],[6,6,'black']];
+      let lastIdx=0;
 
-      p.setup = () => { p.createCanvas(SIZE, SIZE); p.frameRate(60); };
+      p.setup=()=>{ p.createCanvas(SIZE,SIZE); p.pixelDensity(window.devicePixelRatio||1); p.frameRate(60); };
       function boardColors(){
-        if (currentTheme === 'light') {
-          return {
-            bg1: p.color(250,250,250), bg2: p.color(241,241,241),
-            grid: p.color(0,0,0,40),
-            glowA: p.color(0,123,255,120), glowB: p.color(0,212,255,70),
-            win:  p.color(10,132,255,220),
-            blackOutline: p.color(0,0,0,80)
-          };
-        } else {
-          return {
-            bg1: p.color(42,32,24), bg2: p.color(18,14,11),
-            grid: p.color(212,167,44,160),
-            glowA: p.color(250,70,22,160), glowB: p.color(252,128,3,90),
-            win:  p.color(250,70,22,220),
-            blackOutline: p.color(212,167,44,220) // 金色描边
-          };
+        if(currentTheme()==='light'){
+          return { bg1:p.color(250,250,250), bg2:p.color(241,241,241), grid:p.color(0,0,0,60),
+                   glowA:p.color(0,123,255,140), glowB:p.color(0,212,255,90),
+                   win:p.color(10,132,255,220), blackOutline:p.color(0,0,0,100) };
+        }else{
+          return { bg1:p.color(42,32,24), bg2:p.color(18,14,11), grid:p.color(212,167,44,180),
+                   glowA:p.color(250,70,22,160), glowB:p.color(252,128,3,100),
+                   win:p.color(250,70,22,220), blackOutline:p.color(212,167,44,220) };
         }
       }
       function drawBoard(col){
         p.noStroke();
-        for (let y=0; y<SIZE; y++){
-          const t = y/SIZE;
-          p.fill(p.lerpColor(col.bg1, col.bg2, t));
-          p.rect(0,y,SIZE,1);
-        }
+        for(let y=0;y<SIZE;y++){ const t=y/SIZE; p.fill(p.lerpColor(col.bg1,col.bg2,t)); p.rect(0,y,SIZE,1); }
         p.stroke(col.grid); p.strokeWeight(1);
-        for (let i=0;i<GRID;i++){
-          const x = PAD + i*step, y = PAD + i*step;
-          p.line(PAD, y, SIZE-PAD, y);
-          p.line(x, PAD, x, SIZE-PAD);
-        }
+        for(let i=0;i<GRID;i++){ const x=PAD+i*step, y=PAD+i*step; p.line(PAD,y,SIZE-PAD,y); p.line(x,PAD,x,SIZE-PAD); }
       }
-      function drawStone(gx, gy, color, col, isLast=false, t=0){
-        const x = PAD + gx*step, y = PAD + gy*step;
-        const r = step*0.42;
-        const s = isLast ? 0.90 + 0.10 * (0.5 + 0.5 * Math.sin(t*0.015)) : 1.0;
-        p.push(); p.translate(x, y); p.scale(s);
-
-        if (isLast){
+      function drawStone(gx,gy,color,col,isLast=false,t=0){
+        const x=PAD+gx*step, y=PAD+gy*step, r=step*0.42, s=isLast? 0.90+0.10*(0.5+0.5*Math.sin(t*0.015)) : 1.0;
+        p.push(); p.translate(x,y); p.scale(s);
+        if(isLast){
           p.noFill();
-          for (let i=0;i<4;i++){
-            const rr = r + 6 + i*6;
-            const a = i===0 ? 120 : 70 - i*15;
-            const c = i%2===0 ? col.glowA : col.glowB;
-            c.setAlpha(Math.max(0,a + 30*Math.sin(t*0.01)));
-            p.stroke(c); p.strokeWeight(2); p.ellipse(0,0, rr*2, rr*2);
+          for(let i=0;i<4;i++){
+            const rr=r+6+i*6, a=i===0?120:70-i*15, c=i%2===0? col.glowA:col.glowB;
+            c.setAlpha(Math.max(0,a+30*Math.sin(t*0.01))); p.stroke(c); p.strokeWeight(2); p.ellipse(0,0,rr*2,rr*2);
           }
         }
-
         p.noStroke();
-        if (color==='black'){
-          p.fill(currentTheme==='light' ? p.color(30,30,30) : p.color(18,18,18));
-          p.ellipse(0,0, r*2, r*2);
-          p.fill(255,255,255, currentTheme==='light'?30:18);
-          p.ellipse(-r*0.2,-r*0.25, r*0.9, r*0.7);
-          p.noFill(); p.stroke(col.blackOutline); p.strokeWeight(currentTheme==='light'?1.5:2.2);
-          p.ellipse(0,0, r*2-1, r*2-1);
+        if(color==='black'){
+          p.fill(currentTheme()==='light'? p.color(30,30,30): p.color(18,18,18)); p.ellipse(0,0,r*2,r*2);
+          p.fill(255,255,255,currentTheme()==='light'?30:18); p.ellipse(-r*0.2,-r*0.25,r*0.9,r*0.7);
+          p.noFill(); p.stroke(col.blackOutline); p.strokeWeight(currentTheme()==='light'?1.5:2.2); p.ellipse(0,0,r*2-1,r*2-1);
         }else{
-          p.fill(255); p.ellipse(0,0, r*2, r*2);
-          p.noFill(); p.stroke(0,0,0,40); p.strokeWeight(1.5); p.ellipse(0,0, r*2-1, r*2-1);
-          p.noStroke(); p.fill(255,255,255,90); p.ellipse(-r*0.2,-r*0.25, r*0.9, r*0.7);
+          p.fill(255); p.ellipse(0,0,r*2,r*2);
+          p.noFill(); p.stroke(0,0,0,40); p.strokeWeight(1.5); p.ellipse(0,0,r*2-1,r*2-1);
+          p.noStroke(); p.fill(255,255,255,90); p.ellipse(-r*0.2,-r*0.25,r*0.9,r*0.7);
         }
         p.pop();
       }
       function drawWinLine(col){
-        const a = stones[0], b = stones[stones.length-1];
-        const ax = PAD + a[0]*step, ay = PAD + a[1]*step;
-        const bx = PAD + b[0]*step, by = PAD + b[1]*step;
+        const a=stones[0], b=stones[lastIdx];
+        const ax=PAD+a[0]*step, ay=PAD+a[1]*step, bx=PAD+b[0]*step, by=PAD+b[1]*step;
         p.stroke(col.win); p.strokeWeight(4); p.line(ax,ay,bx,by);
       }
-
-      p.draw = () => {
-        const col = boardColors();
-        p.background(currentTheme==='light'?255:0);
-        drawBoard(col);
-
-        const t = p.millis();
-        const period = 3600;
-        const phase = (t % period) / period;
-        lastIdx = Math.floor(phase * stones.length);
-
-        for (let i=0;i<stones.length;i++){
-          const isLast = i === lastIdx;
-          const st = Math.max(0, t - i*200);
-          drawStone(stones[i][0], stones[i][1], stones[i][2], col, isLast, st);
-        }
+      p.draw=()=>{
+        const col=boardColors(); p.background(currentTheme()==='light'?255:0); drawBoard(col);
+        const t=p.millis(), period=3600, phase=(t%period)/period; lastIdx=Math.floor(phase*stones.length);
+        for(let i=0;i<stones.length;i++){ const isLast=i===lastIdx; const st=Math.max(0,t-i*200); drawStone(stones[i][0],stones[i][1],stones[i][2],col,isLast,st); }
         drawWinLine(col);
       };
+      p.redrawOnce=()=>{};
     };
 
-    // Initialize p5.js Instances
-    new p5(tetrisSketch, 'tetris-canvas');
-    new p5(snakeSketch, 'snake-canvas');
-    new p5(flappySketch, 'flappy-canvas');
-    new p5(mazeSketch, 'maze-canvas');
-    new p5(gomokuSketch, 'gomoku-canvas');
+    // 挂载
+    const snakeInstance=new p5(snakeSketch,'snake-canvas');
+    const gomokuInstance=new p5(gomokuSketch,'gomoku-canvas');
+
+    // 主题切换时的单次重绘
+    window.__redrawThumbnails=()=>{
+      if(snakeInstance && snakeInstance.redrawOnce) snakeInstance.redrawOnce();
+      if(gomokuInstance && gomokuInstance.redrawOnce) gomokuInstance.redrawOnce();
+    };
+
+    // 可见性节能
+    const snakeContainer=document.getElementById('snake-canvas');
+    const snakeIO=new IntersectionObserver(([entry])=>{
+      if(!snakeInstance) return;
+      if(entry.isIntersecting) snakeInstance.loop(); else snakeInstance.noLoop();
+    },{threshold:0.1});
+    snakeIO.observe(snakeContainer);
+    document.addEventListener('visibilitychange',()=>{
+      if(!snakeInstance) return;
+      if(document.hidden) snakeInstance.noLoop(); else snakeInstance.loop();
+    });
   </script>
 </body>
 </html>
