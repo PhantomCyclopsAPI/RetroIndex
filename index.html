@@ -10,8 +10,9 @@
   <style>
     * { margin:0; padding:0; box-sizing:border-box; font-family:'Montserrat',sans-serif; }
     body{
-      background:linear-gradient(180deg,#e0f7fa 0%,#ffffff 100%);
-      color:#212529; overflow-x:hidden;
+      /* 冷灰蓝：#0f1c24 → #324450 */
+      background:linear-gradient(180deg,#0f1c24 0%,#324450 100%);
+      color:#d8e9f0; overflow-x:hidden;
       transition:background .5s ease,color .5s ease; animation:fadeIn 1.5s ease-in-out;
     }
     @keyframes fadeIn{from{opacity:0}to{opacity:1}}
@@ -21,79 +22,99 @@
       padding:20px; display:flex; justify-content:center; align-items:center;
       transition:background .3s ease,padding .3s ease;
     }
-    nav.scrolled{background:rgba(255,255,255,.8); backdrop-filter:blur(10px); padding:10px 20px;}
+    /* 冷色半透明顶栏 */
+    nav.scrolled{background:rgba(10,20,28,.6); backdrop-filter:blur(10px); padding:10px 20px;}
     nav ul{display:flex; list-style:none; gap:32px;}
     nav a{color:inherit; text-decoration:none; font-size:16px; font-weight:500; position:relative;}
     nav a::after{
       content:''; position:absolute; bottom:-4px; left:0; width:0; height:2px;
-      background:linear-gradient(90deg,#007bff,#00d4ff); transition:width .3s ease;
+      /* 霓虹青 → 冷淡蓝紫 */
+      background:linear-gradient(90deg,#00e0ff,#9caedb); transition:width .3s ease;
     }
     nav a:hover::after{width:100%}
     #theme-toggle{
-      background:linear-gradient(135deg,#007bff,#00d4ff); color:#fff; border:none;
+      /* 霓虹青按钮 */
+      background:linear-gradient(135deg,#00e0ff,#9caedb); color:#0a1a22; border:none;
       padding:8px 16px; border-radius:50px; cursor:pointer; font-size:14px; margin-left:32px;
       transition:transform .3s ease, box-shadow .3s ease;
     }
-    #theme-toggle:hover{transform:scale(1.05); box-shadow:0 4px 12px rgba(0,123,255,.3)}
+    #theme-toggle:hover{transform:scale(1.05); box-shadow:0 4px 12px rgba(0,224,255,.35)}
 
     .hero{
-      text-align:center; padding:80px 20px; background:linear-gradient(135deg,#e0f7fa 0%,#ffffff 100%);
-      color:#212529; margin-bottom:60px; border-radius:0 0 32px 32px;
-      box-shadow:0 8px 24px rgba(0,0,0,.05);
+      text-align:center; padding:80px 20px;
+      /* 冷灰蓝背景 */
+      background:linear-gradient(135deg,#0f1c24 0%,#324450 100%);
+      color:#d8e9f0; margin-bottom:60px; border-radius:0 0 32px 32px;
+      box-shadow:0 8px 24px rgba(0,0,0,.25);
     }
     .hero h1{
       font-size:42px; font-weight:700; margin-bottom:12px; font-family:'Exo',sans-serif;
-      background:linear-gradient(90deg,#007bff,#00d4ff);
+      /* 霓虹青标题渐变 */
+      background:linear-gradient(90deg,#00e0ff,#9caedb);
       -webkit-background-clip:text; -webkit-text-fill-color:transparent;
     }
-    .hero p{font-size:18px; max-width:500px; margin:0 auto; opacity:.8}
+    .hero p{font-size:18px; max-width:500px; margin:0 auto; opacity:.9}
 
     .game-grid{
       display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr));
       gap:40px; max-width:1000px; margin:0 auto; padding:40px 20px;
     }
     .game-card{
-      background:#fff; border-radius:24px; overflow:hidden;
-      box-shadow:0 12px 32px rgba(0,0,0,.1);
+      /* 冷主题卡片：深蓝灰半透明 */
+      background:rgba(10,20,28,.55); border-radius:24px; overflow:hidden;
+      box-shadow:0 12px 32px rgba(0,224,255,.14);
       transition:transform .4s ease, box-shadow .4s ease, opacity .6s ease-out;
       text-align:center; padding:24px; opacity:0; transform:translateY(30px);
     }
     .game-card.visible{opacity:1; transform:translateY(0)}
-    .game-card:hover{transform:translateY(-12px) scale(1.03); box-shadow:0 16px 48px rgba(0,0,0,.15)}
+    .game-card:hover{transform:translateY(-12px) scale(1.03); box-shadow:0 16px 48px rgba(0,224,255,.22)}
 
     .thumbnail-canvas{
       width:160px; height:160px; margin:0 auto 20px; border-radius:16px; overflow:hidden;
-      box-shadow:0 4px 12px rgba(0,0,0,.1); transition:transform .4s ease, box-shadow .4s ease;
+      box-shadow:0 4px 12px rgba(0,0,0,.25); transition:transform .4s ease, box-shadow .4s ease;
     }
-    .game-card.visible .thumbnail-canvas{transform:scale(1.05); box-shadow:0 8px 24px rgba(0,123,255,.2)}
+    .game-card.visible .thumbnail-canvas{transform:scale(1.05); box-shadow:0 8px 24px rgba(0,224,255,.18)}
     .thumbnail-canvas canvas{width:100% !important; height:100% !important; display:block;}
 
     .game-card h2{font-size:24px; font-weight:700; margin-bottom:8px; font-family:'Exo',sans-serif;}
-    .game-card p{font-size:14px; color:#6c757d; margin-bottom:16px;}
+    .game-card p{font-size:14px; color:#b8c7d6; margin-bottom:16px;}
     .game-card a{
-      display:inline-block; background:linear-gradient(135deg,#007bff,#00d4ff);
-      color:#fff; padding:10px 24px; border-radius:50px; text-decoration:none; font-weight:500;
+      display:inline-block; background:linear-gradient(135deg,#00c6ff,#0072ff);
+      color:#07161d; padding:10px 24px; border-radius:50px; text-decoration:none; font-weight:500;
       transition:transform .3s ease, box-shadow .3s ease;
     }
-    .game-card a:hover{transform:scale(1.05); box-shadow:0 4px 12px rgba(0,123,255,.4)}
+    .game-card a:hover{transform:scale(1.05); box-shadow:0 4px 12px rgba(0,198,255,.35)}
 
-    /* Dark theme */
-    body.dark-theme{background:#000; color:#fff}
-    body.dark-theme nav.scrolled{background:rgba(0,0,0,.8); backdrop-filter:blur(10px)}
-    body.dark-theme nav a::after{background:linear-gradient(90deg,#FA4616,#fc8003); box-shadow:0 0 5px #FA4616}
-    body.dark-theme #theme-toggle{background:linear-gradient(135deg,#FA4616,#fc8003); box-shadow:0 0 8px #FA4616}
-    body.dark-theme #theme-toggle:hover{box-shadow:0 0 12px #FA4616}
-    body.dark-theme .hero{background:#000; box-shadow:0 8px 24px rgba(250,70,22,.1)}
+    /* Dark theme → 暖橙沙尘 */
+    body.dark-theme{
+      background:linear-gradient(180deg,#2a1400 0%,#b64b00 100%);
+      color:#fff2e2;
+    }
+    body.dark-theme nav.scrolled{background:rgba(26,12,0,.6); backdrop-filter:blur(10px)}
+    body.dark-theme nav a::after{
+      background:linear-gradient(90deg,#ff7a00,#ffd28a); box-shadow:0 0 5px rgba(255,122,0,.8)
+    }
+    body.dark-theme #theme-toggle{
+      background:linear-gradient(135deg,#ff7a00,#ffd28a); box-shadow:0 0 8px rgba(255,122,0,.55); color:#2a1400;
+    }
+    body.dark-theme #theme-toggle:hover{box-shadow:0 0 12px rgba(255,122,0,.75)}
+    body.dark-theme .hero{
+      background:linear-gradient(135deg,#2a1400 0%,#b64b00 100%); box-shadow:0 8px 24px rgba(255,122,0,.15)
+    }
     body.dark-theme .hero h1{
-      background:linear-gradient(90deg,#FA4616,#fc8003);
+      background:linear-gradient(90deg,#ff7a00,#ffd28a);
       -webkit-background-clip:text; -webkit-text-fill-color:transparent;
     }
-    body.dark-theme .game-card{background:#121212; box-shadow:0 12px 32px rgba(250,70,22,.1)}
-    body.dark-theme .game-card:hover{box-shadow:0 16px 48px rgba(250,70,22,.2)}
-    body.dark-theme .game-card.visible .thumbnail-canvas{box-shadow:0 8px 24px rgba(250,70,22,.3)}
-    body.dark-theme .game-card p{color:#c7c7c7}
-    body.dark-theme .game-card a{background:linear-gradient(135deg,#FA4616,#fc8003); box-shadow:0 0 8px #FA4616}
-    body.dark-theme .game-card a:hover{box-shadow:0 0 12px #FA4616}
+    body.dark-theme .game-card{
+      background:rgba(56,24,0,.55); box-shadow:0 12px 32px rgba(255,122,0,.20)
+    }
+    body.dark-theme .game-card:hover{box-shadow:0 16px 48px rgba(255,122,0,.30)}
+    body.dark-theme .game-card.visible .thumbnail-canvas{box-shadow:0 8px 24px rgba(255,122,0,.25)}
+    body.dark-theme .game-card p{color:#ffe3c7}
+    body.dark-theme .game-card a{
+      background:linear-gradient(135deg,#ff7a00,#ffb347); box-shadow:0 0 8px rgba(255,122,0,.35); color:#2a1400;
+    }
+    body.dark-theme .game-card a:hover{box-shadow:0 0 12px rgba(255,122,0,.5)}
 
     @media (max-width:768px){
       .hero{padding:60px 20px}
@@ -185,12 +206,11 @@
     // ---------- p5 helpers ----------
     const currentTheme=()=>document.body.classList.contains('dark-theme')?'dark':'light';
 
-    // ===== Snake：极简渐变风（整条蛇渐变、无内层渐变与描边）+ 极简背景 =====
+    // ===== Snake（仅改颜色）=====
     const snakeSketch=(p)=>{
       const TILE=20, W=160, H=160, COLS=W/TILE|0, ROWS=H/TILE|0;
-      const X0=1, X1=6, Y0=1, Y1=6; // 巡航范围
+      const X0=1, X1=6, Y0=1, Y1=6;
 
-      // 路径：行内往返 + 左侧竖直回程（闭环）
       function makeRoute(){
         const r=[];
         for(let y=Y0;y<=Y1;y++){
@@ -209,77 +229,58 @@
         return {x: a.x+(b.x-a.x)*t, y: a.y+(b.y-a.y)*t};
       }
 
-      const SPEED=3.0;       // tiles/sec
-      const SEG_SPACING=0.7; // 段间距
-      let length=6;          // 段数
+      const SPEED=3.0, SEG_SPACING=0.7; let length=6, uHead=0, lastMillis=0;
 
-      let uHead=0, lastMillis=0;
-
-      // 极简背景：纯底 + 细网格线
       function drawBoard(){
-        p.background(currentTheme()==='light' ? 255 : 0);
-        const gridCol = currentTheme()==='light' ? p.color(0,0,0,80) : p.color(255,255,255,60);
-        p.stroke(gridCol); p.strokeWeight(1);
+        // 冷/暖背景与网格
+        if(currentTheme()==='light'){
+          p.background(p.color(15,28,36)); // 冷灰蓝
+          p.stroke(p.color(156,174,219,70));
+        }else{
+          p.background(p.color(42,18,0));  // 暖褐基底
+          p.stroke(p.color(255,210,138,70));
+        }
+        p.strokeWeight(1);
         for(let i=0;i<=COLS;i++) p.line(i*TILE,0,i*TILE,H);
         for(let j=0;j<=ROWS;j++) p.line(0,j*TILE,W,j*TILE);
       }
 
-      // 可选的小食物点（点缀）
       function drawFood(){
         const FOOD_AHEAD=4.0;
         const f=posOnRoute(uHead+FOOD_AHEAD);
-        p.noStroke(); p.fill('#ff5c00');
+        p.noStroke();
+        p.fill(currentTheme()==='light' ? '#00e0ff' : '#ff7a00'); // 冷: 霓虹青；暖: 橙
         p.rect(Math.floor(f.x)*TILE+4, Math.floor(f.y)*TILE+4, TILE-8, TILE-8, 4);
       }
 
-      // —— 关键修改：整条蛇“头→尾”渐变，方块不透明、无内层渐变与描边 —— //
       function drawSnake(){
-        const GAP=4;  // 与格线的留白
-        const R=3;    // 小圆角
-        // 头/尾基色：不透明，避免与网格叠加产生亮度跳变
-        const head = currentTheme()==='light' ? p.color(0,123,255) : p.color(250,70,22);
-        const tail = p.lerpColor(head, p.color(255,255,255), 0.55); // 更浅同色系
+        const GAP=4, R=3;
+        const head = currentTheme()==='light' ? p.color(0,224,255) : p.color(255,122,0); // 头色
+        const tail = p.lerpColor(head, p.color(255,255,255), 0.55);
 
         p.noStroke();
         for(let i=length-1;i>=0;i--){
           const u = uHead - i*SEG_SPACING;
           const pos = posOnRoute(u);
-
-          // 极简块风：对齐到最近格子（保持“块感”）
           const gx=Math.round(pos.x), gy=Math.round(pos.y);
           const x=gx*TILE + GAP/2, y=gy*TILE + GAP/2, w=TILE-GAP, h=TILE-GAP;
-
-          // 沿蛇身渐变：尾(0)→头(1)
           const t = p.constrain(1 - i/(length-1 || 1), 0, 1);
           const col = p.lerpColor(tail, head, t);
-          p.fill(col);
-          p.rect(x, y, w, h, R);
+          p.fill(col); p.rect(x, y, w, h, R);
         }
       }
 
-      p.setup=()=>{
-        p.createCanvas(W,H);
-        p.pixelDensity(window.devicePixelRatio||1);
-        p.frameRate(60);
-        lastMillis=p.millis();
-      };
-
+      p.setup=()=>{ p.createCanvas(W,H); p.pixelDensity(window.devicePixelRatio||1); p.frameRate(60); lastMillis=p.millis(); };
       p.draw=()=>{
         const now=p.millis();
         const dt=Math.min(.05, Math.max(0,(now-lastMillis)/1000)); lastMillis=now;
         uHead += SPEED*dt;
-
-        drawBoard();
-        drawFood();
-        drawSnake();
-      };
-
-      p.redrawOnce=()=>{
         drawBoard(); drawFood(); drawSnake();
       };
+      p.redrawOnce=()=>{ drawBoard(); drawFood(); drawSnake(); };
     };
 
-    // ===== Gomoku（保持不变）=====
+    // ===== Gomoku（仅改颜色）=====
     const gomokuSketch=(p)=>{
       const SIZE=160, PAD=16, GRID=9;
       const step=(SIZE-PAD*2)/(GRID-1);
@@ -287,23 +288,34 @@
       let lastIdx=0;
 
       p.setup=()=>{ p.createCanvas(SIZE,SIZE); p.pixelDensity(window.devicePixelRatio||1); p.frameRate(60); };
+
       function boardColors(){
         if(currentTheme()==='light'){
-          return { bg1:p.color(250,250,250), bg2:p.color(241,241,241), grid:p.color(0,0,0,60),
-                   glowA:p.color(0,123,255,140), glowB:p.color(0,212,255,90),
-                   win:p.color(10,132,255,220), blackOutline:p.color(0,0,0,100) };
+          // 冷灰蓝棋盘
+          return {
+            bg1:p.color(15,28,36), bg2:p.color(50,68,80),
+            grid:p.color(156,174,219,170),
+            glowA:p.color(0,224,255,160), glowB:p.color(156,174,219,110),
+            win:p.color(0,224,255,230), blackOutline:p.color(156,174,219,220)
+          };
         }else{
-          return { bg1:p.color(42,32,24), bg2:p.color(18,14,11), grid:p.color(212,167,44,180),
-                   glowA:p.color(250,70,22,160), glowB:p.color(252,128,3,100),
-                   win:p.color(250,70,22,220), blackOutline:p.color(212,167,44,220) };
+          // 暖橙沙尘棋盘
+          return {
+            bg1:p.color(56,24,0), bg2:p.color(182,75,0),
+            grid:p.color(255,210,138,180),
+            glowA:p.color(255,122,0,170), glowB:p.color(255,210,138,110),
+            win:p.color(255,180,100,230), blackOutline:p.color(255,210,138,220)
+          };
         }
       }
+
       function drawBoard(col){
         p.noStroke();
         for(let y=0;y<SIZE;y++){ const t=y/SIZE; p.fill(p.lerpColor(col.bg1,col.bg2,t)); p.rect(0,y,SIZE,1); }
         p.stroke(col.grid); p.strokeWeight(1);
         for(let i=0;i<GRID;i++){ const x=PAD+i*step, y=PAD+i*step; p.line(PAD,y,SIZE-PAD,y); p.line(x,PAD,x,SIZE-PAD); }
       }
+
       function drawStone(gx,gy,color,col,isLast=false,t=0){
         const x=PAD+gx*step, y=PAD+gy*step, r=step*0.42, s=isLast? 0.90+0.10*(0.5+0.5*Math.sin(t*0.015)) : 1.0;
         p.push(); p.translate(x,y); p.scale(s);
@@ -316,23 +328,24 @@
         }
         p.noStroke();
         if(color==='black'){
-          p.fill(currentTheme()==='light'? p.color(30,30,30): p.color(18,18,18)); p.ellipse(0,0,r*2,r*2);
-          p.fill(255,255,255,currentTheme()==='light'?30:18); p.ellipse(-r*0.2,-r*0.25,r*0.9,r*0.7);
-          p.noFill(); p.stroke(col.blackOutline); p.strokeWeight(currentTheme()==='light'?1.5:2.2); p.ellipse(0,0,r*2-1,r*2-1);
+          p.fill(currentTheme()==='light'? p.color(18,18,18): p.color(28,20,16));
+          p.ellipse(0,0,r*2,r*2);
+          p.noFill(); p.stroke(col.blackOutline); p.strokeWeight(currentTheme()==='light'?2.0:2.2); p.ellipse(0,0,r*2-1,r*2-1);
         }else{
           p.fill(255); p.ellipse(0,0,r*2,r*2);
-          p.noFill(); p.stroke(0,0,0,40); p.strokeWeight(1.5); p.ellipse(0,0,r*2-1,r*2-1);
-          p.noStroke(); p.fill(255,255,255,90); p.ellipse(-r*0.2,-r*0.25,r*0.9,r*0.7);
+          p.noFill(); p.stroke(0,0,0,50); p.strokeWeight(1.6); p.ellipse(0,0,r*2-1,r*2-1);
         }
         p.pop();
       }
+
       function drawWinLine(col){
         const a=stones[0], b=stones[lastIdx];
         const ax=PAD+a[0]*step, ay=PAD+a[1]*step, bx=PAD+b[0]*step, by=PAD+b[1]*step;
         p.stroke(col.win); p.strokeWeight(4); p.line(ax,ay,bx,by);
       }
+
       p.draw=()=>{
-        const col=boardColors(); p.background(currentTheme()==='light'?255:0); drawBoard(col);
+        const col=boardColors(); p.background(0,0); drawBoard(col);
         const t=p.millis(), period=3600, phase=(t%period)/period; lastIdx=Math.floor(phase*stones.length);
         for(let i=0;i<stones.length;i++){ const isLast=i===lastIdx; const st=Math.max(0,t-i*200); drawStone(stones[i][0],stones[i][1],stones[i][2],col,isLast,st); }
         drawWinLine(col);
