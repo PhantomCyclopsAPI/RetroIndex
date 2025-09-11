@@ -6,26 +6,17 @@
   <meta name="description" content="Retro Index · 经典小游戏的现代重制。Snake、Gomoku 等，极简渐变与顺滑动效，支持深浅色主题。"/>
   <title>Retro Index · 经典小游戏的现代重制</title>
 
-  <!-- 主题色 & 深浅色声明 -->
+  <!-- 主题色（跟随系统） -->
   <meta name="theme-color" content="#0f1c24" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#2a1400" media="(prefers-color-scheme: dark)">
 
-  <!-- Open Graph / Twitter -->
-  <meta property="og:title" content="Retro Index · 经典小游戏的现代重制">
-  <meta property="og:description" content="Snake、Gomoku 等，极简渐变与顺滑动效，支持深浅色主题。">
-  <meta property="og:type" content="website">
-  <meta property="og:url" content="https://retroindex.org/">
-  <meta property="og:image" content="https://retroindex.org/og-cover.png">
-  <meta name="twitter:card" content="summary_large_image">
-
-  <!-- 字体 & p5 -->
+  <!-- 字体 & p5（defer 保持，底部用 window.load 包裹） -->
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Exo:wght@700&family=Montserrat:wght@400;500;700&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.2/p5.min.js" defer></script>
 
   <style>
-    /* ========== 设计系统：颜色与半径 ========== */
     :root{
       --bg-0:#0f1c24; --bg-1:#324450;
       --tx-0:#d8e9f0; --tx-1:#b8c7d6;
@@ -48,7 +39,6 @@
       --focus:0 0 0 3px rgba(255,122,0,.4);
     }
 
-    /* ========== 全局 ========== */
     *{box-sizing:border-box}
     html,body{height:100%}
     body{
@@ -57,25 +47,37 @@
       background:linear-gradient(180deg,var(--bg-0) 0%,var(--bg-1) 100%);
       overflow-x:hidden; transition:background .45s ease,color .45s ease; animation:fadeIn 1s ease both;
     }
-    @keyframes fadeIn{from{opacity:.0}to{opacity:1}}
+    @keyframes fadeIn{from{opacity:0}to{opacity:1}}
     a{color:inherit; text-decoration:none}
     img{display:block; max-width:100%}
     button{font:inherit}
-    .visually-hidden{position:absolute!important; height:1px;width:1px;overflow:hidden;clip:rect(1px,1px,1px,1px);white-space:nowrap}
+    .visually-hidden{position:absolute!important;height:1px;width:1px;overflow:hidden;clip:rect(1px,1px,1px,1px);white-space:nowrap}
 
-    /* ========== 顶栏 ========== */
+    /* 顶栏：用 ::before 承载模糊，避免底部合成残影 */
     nav{
       position:sticky; top:0; z-index:100;
       display:flex; align-items:center; justify-content:center; gap:20px;
-      padding:16px 20px; transition:all .3s ease; background:transparent;
+      padding:16px 20px; transition:all .3s ease;
+      background:transparent;
+      isolation:isolate;          /* 独立堆叠上下文 */
+      will-change:transform;      /* 单独合成层 */
     }
-    nav.scrolled{background:rgba(0,0,0,.25); backdrop-filter:blur(10px); padding:10px 20px}
+    nav.scrolled{ background:rgba(0,0,0,.25); padding:10px 20px; }
+    nav.scrolled::before{ content:none; }
+    @supports ((-webkit-backdrop-filter:blur(10px)) or (backdrop-filter:blur(10px))) {
+      nav.scrolled::before{
+        content:''; position:absolute; inset:0;
+        -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px);
+        background:transparent; z-index:-1; pointer-events:none;
+      }
+    }
+
     .nav-inner{width:min(1100px,92vw); display:flex; align-items:center; gap:16px}
     .brand{display:flex; align-items:center; gap:10px; margin-right:auto}
     .brand-badge{
       width:32px; height:32px; border-radius:9px; display:grid; place-items:center;
       background:linear-gradient(135deg,var(--pri-0),var(--pri-1));
-      color:#07161d; font-weight:800; font-family:'Exo',sans-serif; box-shadow:0 6px 18px rgba(0,0,0,.25)
+      color:#07161d; font-weight:800; font-family:'Exo',sans-serif; box-shadow:0 6px 18px rgba(0,0,0,.25);
     }
     .brand h1{
       font-size:18px; margin:0; letter-spacing:.3px; font-weight:800; font-family:'Exo',sans-serif;
@@ -92,14 +94,10 @@
     .searchbar{position:relative; flex:1 1 280px; max-width:380px}
     .searchbar input{
       width:100%; padding:10px 36px 10px 12px; border-radius:999px; border:1px solid transparent;
-      background:rgba(255,255,255,.06); color:var(--tx-0); outline:none;
-      transition:box-shadow .25s ease,border-color .25s ease;
+      background:rgba(255,255,255,.06); color:var(--tx-0); outline:none; transition:box-shadow .25s ease,border-color .25s ease;
     }
     .searchbar input:focus{box-shadow:var(--focus); border-color:transparent}
-    .searchbar .kbd{
-      position:absolute; right:8px; top:50%; transform:translateY(-50%);
-      font-size:12px; opacity:.8; padding:2px 6px; border-radius:6px; background:rgba(255,255,255,.08)
-    }
+    .searchbar .kbd{ position:absolute; right:8px; top:50%; transform:translateY(-50%); font-size:12px; opacity:.8; padding:2px 6px; border-radius:6px; background:rgba(255,255,255,.08) }
 
     #theme-toggle{
       background:linear-gradient(135deg,var(--pri-0),var(--pri-1));
@@ -109,7 +107,6 @@
     #theme-toggle:hover{transform:translateY(-1px); box-shadow:0 8px 18px rgba(0,0,0,.25)}
     #theme-toggle:focus-visible{outline:none; box-shadow:var(--focus)}
 
-    /* ========== Hero ========== */
     .hero{padding:68px 20px 28px; text-align:center}
     .hero h2{
       margin:0 0 10px; font-size:42px; font-weight:800; line-height:1.1; letter-spacing:.3px; font-family:'Exo',sans-serif;
@@ -117,18 +114,15 @@
     }
     .hero p{margin:0 auto; max-width:560px; opacity:.92}
 
-    /* ========== 快捷标签 ========== */
     .tags{display:flex; gap:10px; flex-wrap:wrap; justify-content:center; margin:18px auto 10px}
     .chip{
       padding:8px 12px; border-radius:999px; background:var(--chip-bg); color:var(--chip-tx);
-      font-size:13px; border:1px solid rgba(255,255,255,.08); cursor:pointer; user-select:none;
-      transition:transform .2s ease, box-shadow .2s ease; will-change:transform;
+      font-size:13px; border:1px solid rgba(255,255,255,.08); cursor:pointer; user-select:none; transition:transform .2s ease, box-shadow .2s ease;
     }
     .chip:hover{transform:translateY(-1px)}
     .chip.active{box-shadow:0 0 0 2px var(--pri-0) inset}
 
-    /* ========== 游戏网格 ========== */
-    .section{padding:14px 20px 60px}
+    .section{padding:14px 20px 60px; position:relative; z-index:0; contain:paint;}
     .container{width:min(1100px,92vw); margin:0 auto}
     .section-title{display:flex; align-items:center; gap:10px; margin-bottom:16px}
     .section-title h3{margin:0; font-size:18px; opacity:.9}
@@ -139,16 +133,13 @@
       position:relative; padding:18px; border-radius:var(--rad-xl); background:var(--card-bg);
       box-shadow:var(--card-shadow);
       transition:transform .35s ease, box-shadow .35s ease, opacity .6s ease-out;
-      opacity:0; transform:translateY(24px); outline:none; will-change:transform,opacity;
+      opacity:0; transform:translateY(24px); outline:none;
     }
     .game-card.visible{opacity:1; transform:translateY(0)}
     .game-card:hover{transform:translateY(-10px); box-shadow:var(--card-shadow-hover)}
     .game-card:focus-visible{box-shadow:var(--focus), var(--card-shadow)}
 
-    .thumb{
-      width:100%; aspect-ratio:1/1; border-radius:var(--rad-lg); overflow:hidden;
-      display:block; margin-bottom:14px; position:relative; box-shadow:0 6px 18px rgba(0,0,0,.25); transform:translateZ(0);
-    }
+    .thumb{ width:100%; aspect-ratio:1/1; border-radius:var(--rad-lg); overflow:hidden; display:block; margin-bottom:14px; position:relative; box-shadow:0 6px 18px rgba(0,0,0,.25); transform:translateZ(0); }
     .thumb canvas{width:100% !important; height:100% !important; display:block}
 
     .game-card:hover .thumb{transform:translateY(-2px)}
@@ -167,33 +158,16 @@
     .meta{display:flex; gap:8px; flex-wrap:wrap; margin-top:8px}
     .meta .pill{font-size:12px; opacity:.9; padding:4px 8px; border:1px dashed rgba(255,255,255,.15); border-radius:999px}
 
-    /* ========== 页脚 ========== */
-    footer{padding:32px 20px; border-top:1px solid rgba(255,255,255,.08); opacity:.9}
+    footer{padding:32px 20px; border-top:1px solid rgba(255,255,255,.08); opacity:.9; position:relative; z-index:0; contain:paint;}
     .foot{width:min(1100px,92vw); margin:0 auto; display:flex; flex-wrap:wrap; gap:12px; align-items:center; justify-content:space-between}
     .foot small{opacity:.7}
 
-    /* 响应式/动效偏好 */
     @media (max-width:768px){ .hero{padding-top:54px} .hero h2{font-size:32px} .nav-links{display:none} }
     @media (prefers-reduced-motion:reduce){
       *,*:before,*:after{transition:none !important; animation:none !important}
       .game-card{opacity:1 !important; transform:none !important}
     }
   </style>
-
-  <!-- JSON-LD -->
-  <script type="application/ld+json">
-  {
-    "@context":"https://schema.org",
-    "@type":"WebSite",
-    "name":"Retro Index",
-    "url":"https://retroindex.org/",
-    "potentialAction":{
-      "@type":"SearchAction",
-      "target":"https://retroindex.org/?q={search_term_string}",
-      "query-input":"required name=search_term_string"
-    }
-  }
-  </script>
 </head>
 <body>
   <!-- 顶栏 -->
@@ -225,7 +199,6 @@
     <h2>经典游戏 · 现代重制</h2>
     <p>极简渐变风、顺滑动画、深浅色主题、自适应与可达性优化。用最干净的界面，玩最纯粹的乐趣。</p>
 
-    <!-- 快捷标签 -->
     <div class="tags" aria-label="快速筛选">
       <button class="chip active" data-filter="all" aria-pressed="true" type="button">全部</button>
       <button class="chip" data-filter="board" aria-pressed="false" type="button">棋类</button>
@@ -243,35 +216,25 @@
         <!-- Snake -->
         <article class="game-card" tabindex="0" role="article" data-tags="arcade retro" data-title="snake">
           <a href="/Games/snake.html" class="thumb" id="snake-canvas" aria-label="打开 Snake"></a>
-          <div class="title-row">
-            <h4 id="snake-title">Snake</h4>
-            <span class="badge" aria-label="快速节奏">FAST</span>
-          </div>
-          <p class="desc" id="snake-desc">极简块状像素与顺滑路径动画，轻巧却耐玩。</p>
-          <div class="actions" aria-labelledby="snake-title snake-desc">
+          <div class="title-row"><h4>Snake</h4><span class="badge">FAST</span></div>
+          <p class="desc">极简块状像素与顺滑路径动画，轻巧却耐玩。</p>
+          <div class="actions">
             <a class="btn primary" href="/Games/snake.html" aria-label="Play Snake 立即开始">Play</a>
             <a class="btn" href="/Games/snake.html#about" aria-label="查看 Snake 详情">详情</a>
           </div>
-          <div class="meta" aria-label="Snake 元信息">
-            <span class="pill">上手快</span><span class="pill">键盘操作</span>
-          </div>
+          <div class="meta" aria-label="Snake 元信息"><span class="pill">上手快</span><span class="pill">键盘操作</span></div>
         </article>
 
         <!-- Gomoku -->
         <article class="game-card" tabindex="0" role="article" data-tags="board retro" data-title="gomoku">
           <a href="/Games/Gomoku.html" class="thumb" id="gomoku-canvas" aria-label="打开 Gomoku"></a>
-          <div class="title-row">
-            <h4 id="gomoku-title">Gomoku</h4>
-            <span class="badge" aria-label="策略性">TACTIC</span>
-          </div>
-          <p class="desc" id="gomoku-desc">五子连珠，干净盘面与呼吸光提示最近一步。</p>
-          <div class="actions" aria-labelledby="gomoku-title gomoku-desc">
+          <div class="title-row"><h4>Gomoku</h4><span class="badge">TACTIC</span></div>
+          <p class="desc">五子连珠，干净盘面与呼吸光提示最近一步。</p>
+          <div class="actions">
             <a class="btn primary" href="/Games/Gomoku.html" aria-label="Play Gomoku 立即开始">Play</a>
             <a class="btn" href="/Games/Gomoku.html#about" aria-label="查看 Gomoku 详情">规则</a>
           </div>
-          <div class="meta" aria-label="Gomoku 元信息">
-            <span class="pill">策略</span><span class="pill">单机/本地对战</span>
-          </div>
+          <div class="meta" aria-label="Gomoku 元信息"><span class="pill">策略</span><span class="pill">单机/本地对战</span></div>
         </article>
       </div>
     </div>
@@ -285,16 +248,14 @@
     </div>
   </footer>
 
-  <!-- 交互脚本 -->
+  <!-- 交互脚本（确保在 p5.js 之后执行） -->
   <script>
-  (()=>{
+  window.addEventListener('load', function(){
     const $ = (sel, root=document) => root.querySelector(sel);
     const $$ = (sel, root=document) => Array.from(root.querySelectorAll(sel));
 
-    // 年份
+    // 年份与回顶
     $('#y').textContent = new Date().getFullYear();
-
-    // 回顶
     $('#toTop').addEventListener('click',(e)=>{e.preventDefault(); window.scrollTo({top:0,behavior:'smooth'})});
 
     // 顶栏滚动
@@ -311,100 +272,66 @@
 
     // 卡片出现动画
     const io=new IntersectionObserver(es=>{
-      es.forEach(e=>{
-        if(e.isIntersecting){ e.target.classList.add('visible'); io.unobserve(e.target); }
-      });
+      es.forEach(e=>{ if(e.isIntersecting){ e.target.classList.add('visible'); io.unobserve(e.target); } });
     },{threshold:.2});
     $$('.game-card').forEach(c=>io.observe(c));
 
     // 主题
     const THEME_KEY='retroIndexTheme';
-    const themeBtn = $('#theme-toggle');
-    function applyTheme(t){
-      const dark=t==='dark';
-      document.body.classList.toggle('dark-theme',dark);
-      themeBtn.setAttribute('aria-pressed', String(dark));
-    }
+    function applyTheme(t){ const dark=t==='dark'; document.body.classList.toggle('dark-theme',dark); $('#theme-toggle').setAttribute('aria-pressed',String(dark)); }
     (()=>{
       const saved=localStorage.getItem(THEME_KEY);
       const prefersDark=window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
       applyTheme(saved || (prefersDark?'dark':'light'));
     })();
-    themeBtn.addEventListener('click',()=>{
+    $('#theme-toggle').addEventListener('click',()=>{
       const dark=!document.body.classList.contains('dark-theme');
-      applyTheme(dark?'dark':'light');
-      localStorage.setItem(THEME_KEY,dark?'dark':'light');
+      applyTheme(dark?'dark':'light'); localStorage.setItem(THEME_KEY,dark?'dark':'light');
       window.__redrawThumbnails && window.__redrawThumbnails();
     });
-    // 跟随系统变化
     if(window.matchMedia){
-      const mq = window.matchMedia('(prefers-color-scheme: dark)');
+      const mq=window.matchMedia('(prefers-color-scheme: dark)');
       mq.addEventListener?.('change', (e)=>{
-        const saved = localStorage.getItem(THEME_KEY);
-        if(!saved){ // 仅当未手动指定时跟随系统
-          applyTheme(e.matches?'dark':'light');
-          window.__redrawThumbnails && window.__redrawThumbnails();
-        }
+        const saved=localStorage.getItem(THEME_KEY);
+        if(!saved){ applyTheme(e.matches?'dark':'light'); window.__redrawThumbnails && window.__redrawThumbnails(); }
       });
     }
 
-    // 快捷键：/ 聚焦搜索
+    // 搜索与筛选
     document.addEventListener('keydown',(e)=>{
-      if(e.key==='/' && document.activeElement !== $('#search')){
-        e.preventDefault(); $('#search').focus();
-      }
-      // 回车在聚焦卡片时打开 Play
+      if(e.key==='/' && document.activeElement !== $('#search')){ e.preventDefault(); $('#search').focus(); }
       if(e.key==='Enter' && document.activeElement?.classList.contains('game-card')){
-        const play = document.activeElement.querySelector('.actions .primary');
-        if(play) play.click();
+        const play = document.activeElement.querySelector('.actions .primary'); if(play) play.click();
       }
     });
-
-    // 筛选（标签 + 关键词） + URL Hash 同步
-    const chips=$$('.chip'); const cards=$$('.game-card'); const searchEl=$('#search');
-    let activeFilter='all', debounceTimer=null;
-
-    function setActiveFilter(tag){
-      activeFilter=tag||'all';
-      chips.forEach(x=>{
-        const on = x.dataset.filter===activeFilter;
-        x.classList.toggle('active', on);
-        x.setAttribute('aria-pressed', String(on));
-      });
-      if(location.hash.replace('#','')!==activeFilter){
-        history.replaceState(null,'', activeFilter==='all' ? location.pathname : ('#'+activeFilter));
-      }
-    }
+    const chips=$$('.chip'); const grid=$('#grid'); const cards=$$('.game-card',grid);
+    let activeFilter='all'; let debounce=null;
     function applyFilter(){
-      const kw = searchEl.value.trim().toLowerCase();
+      const kw = $('#search').value.trim().toLowerCase();
       cards.forEach(card=>{
-        const tags = (card.dataset.tags||'').toLowerCase();
-        const title = (card.dataset.title||'').toLowerCase();
-        const tagPass = activeFilter==='all' || tags.includes(activeFilter);
-        const kwPass = !kw || tags.includes(kw) || title.includes(kw);
-        card.style.display = (tagPass && kwPass) ? '' : 'none';
+        const tags=(card.dataset.tags||'').toLowerCase();
+        const title=(card.dataset.title||'').toLowerCase();
+        const tagPass=activeFilter==='all'||tags.includes(activeFilter);
+        const kwPass=!kw||tags.includes(kw)||title.includes(kw);
+        card.style.display=(tagPass && kwPass)?'':'none';
       });
     }
     chips.forEach(ch=>{
       ch.addEventListener('click',()=>{
-        setActiveFilter(ch.dataset.filter);
-        applyFilter();
+        chips.forEach(x=>{x.classList.remove('active'); x.setAttribute('aria-pressed','false');});
+        ch.classList.add('active'); ch.setAttribute('aria-pressed','true');
+        activeFilter=ch.dataset.filter; applyFilter();
       });
     });
-    searchEl.addEventListener('input',()=>{
-      clearTimeout(debounceTimer);
-      debounceTimer=setTimeout(applyFilter,120);
-    });
+    $('#search').addEventListener('input',()=>{ clearTimeout(debounce); debounce=setTimeout(applyFilter,120); });
 
-    // 从 URL Hash 初始化（如 #board）
-    const initTag = location.hash.replace('#','');
-    if(initTag) setActiveFilter(initTag); else setActiveFilter('all');
-    applyFilter();
+    // 当前主题
+    const currentTheme=()=>document.body.classList.contains('dark-theme')?'light'==='dark'?'dark':'dark':(document.body.classList.contains('dark-theme')?'dark':'light');
 
-    // ========== 主题查询 ==========
-    const currentTheme=()=>document.body.classList.contains('dark-theme')?'dark':'light';
+    // ↑ 上面那行有点绕，改成清晰版：
+    const theme = () => document.body.classList.contains('dark-theme') ? 'dark' : 'light';
 
-    // ========== Snake 缩略图 ==========
+    // Snake 缩略图
     const snakeSketch = (p) => {
       const TILE = 20, W = 320, H = 320;
       const COLS = (W / TILE) | 0, ROWS = (H / TILE) | 0;
@@ -430,8 +357,8 @@
 
       const SPEED_BASE = 3.0, SEG_SPACING = 0.7;
       let length = 10, uHead = 0, lastMillis = 0, eatPulse = 0;
-      let apple = randApple();
 
+      let apple = randApple();
       function randApple() {
         for (let k = 0; k < 20; k++) {
           const x = Math.floor(p.random(X0, X1 + 1));
@@ -442,7 +369,8 @@
         const headG = gridHead();
         return { x: Math.max(X0, Math.min(X1, headG.x)), y: Math.max(Y0, Math.min(Y1, headG.y)) };
       }
-      const isLight = () => currentTheme() === 'light';
+
+      const isLight = () => theme() === 'light';
       function gridHead() { const pos = posOnRoute(uHead); return { x: Math.round(pos.x), y: Math.round(pos.y) }; }
 
       function drawBoard() {
@@ -452,15 +380,16 @@
         for (let i = 0; i <= COLS; i++) p.line(i * TILE, 0, i * TILE, H);
         for (let j = 0; j <= ROWS; j++) p.line(0, j * TILE, W, j * TILE);
       }
+
       function drawApple() {
         const r = 4, pad = 4;
         const s = eatPulse > 0 ? 0.85 + 0.15 * Math.sin(eatPulse * 0.04) : 1.0;
         const cx = apple.x * TILE + TILE / 2;
         const cy = apple.y * TILE + TILE / 2;
         const w = (TILE - pad * 2) * s, h = (TILE - pad * 2) * s;
-        p.noStroke(); p.fill(isLight() ? '#00e0ff' : '#ff7a00');
-        p.rect(cx - w / 2, cy - h / 2, w, h, r);
+        p.noStroke(); p.fill(isLight() ? '#00e0ff' : '#ff7a00'); p.rect(cx - w/2, cy - h/2, w, h, r);
       }
+
       function drawSnake() {
         const GAP = 4, R = 4;
         const headCol = isLight() ? p.color(0, 224, 255) : p.color(255, 122, 0);
@@ -480,6 +409,7 @@
           p.rect(x + (w - dw) / 2, y + (h - dh) / 2, dw, dh, R);
         }
       }
+
       function checkEat() {
         const g = gridHead();
         if (g.x === apple.x && g.y === apple.y) {
@@ -488,11 +418,13 @@
         if (eatPulse > 0) eatPulse++;
         if (eatPulse > 20) eatPulse = 0;
       }
+
       function stepHead(dt) {
         const speed = SPEED_BASE * (1.0 + 0.06 * Math.sin(uHead * 0.6));
         uHead += speed * dt;
       }
-      p.setup = () => { p.createCanvas(W, H); p.pixelDensity(Math.min(2, window.devicePixelRatio || 1)); p.frameRate(60); lastMillis = p.millis(); };
+
+      p.setup = () => { p.createCanvas(320, 320); p.pixelDensity(Math.min(2, window.devicePixelRatio || 1)); p.frameRate(60); lastMillis = p.millis(); };
       p.draw = () => {
         const now = p.millis();
         const dt = Math.min(0.05, Math.max(0, (now - lastMillis) / 1000));
@@ -502,12 +434,12 @@
       p.redrawOnce = () => { drawBoard(); drawApple(); drawSnake(); };
     };
 
-    // ========== Gomoku 缩略图 ==========
+    // Gomoku 缩略图
     const gomokuSketch=(p)=>{
       const SIZE=600, PAD=64, GRID=9; const step=(SIZE-PAD*2)/(GRID-1);
       const stones=[[2,2,'black'],[3,3,'white'],[4,4,'black'],[5,5,'white'],[6,6,'black']];
       function col(){
-        if(currentTheme()==='light'){
+        if(theme()==='light'){
           return {bg1:p.color(15,28,36), bg2:p.color(50,68,80), grid:p.color(156,174,219,180),
                   glowA:p.color(0,224,255,170), glowB:p.color(156,174,219,120),
                   win:p.color(0,224,255,230), blackOutline:p.color(156,174,219,220)};
@@ -534,7 +466,7 @@
         }
         p.noStroke();
         if(color==='black'){
-          p.fill(currentTheme()==='light'? p.color(18,18,18): p.color(28,20,16));
+          p.fill(theme()==='light'? p.color(18,18,18): p.color(28,20,16));
           p.ellipse(0,0,r*2,r*2);
           p.noFill(); p.stroke(c.blackOutline); p.strokeWeight(2); p.ellipse(0,0,r*2-1,r*2-1);
         }else{
@@ -543,7 +475,7 @@
         }
         p.pop();
       }
-      p.setup=()=>{ p.createCanvas(SIZE,SIZE); p.pixelDensity(Math.min(2, window.devicePixelRatio||1)); };
+      p.setup=()=>{ p.createCanvas(600,600); p.pixelDensity(Math.min(2, window.devicePixelRatio||1)); };
       p.draw=()=>{
         const C=col(); p.background(0,0); drawBoard(C);
         const t=p.millis(); const idx=Math.floor((t/900)%stones.length);
@@ -555,24 +487,20 @@
       p.redrawOnce=()=>{ p.redraw(); };
     };
 
-    // p5 挂载
+    // 挂载 p5（此时 p5 已加载）
     const snakeP5 = new p5(snakeSketch,'snake-canvas');
     const gomokuP5 = new p5(gomokuSketch,'gomoku-canvas');
-
-    // 主题切换重绘
     window.__redrawThumbnails=()=>{ snakeP5.redrawOnce && snakeP5.redrawOnce(); gomokuP5.redrawOnce && gomokuP5.redrawOnce(); };
 
-    // 可见性节能：在视口内才 loop
-    const toggleLoop = (inst, el, on)=>{ if(!inst) return; on ? inst.loop() : inst.noLoop(); };
-    const mkIO = (inst, el)=> new IntersectionObserver(([entry])=>toggleLoop(inst, el, entry.isIntersecting),{threshold:.15});
-    mkIO(snakeP5, $('#snake-canvas')).observe($('#snake-canvas'));
-    mkIO(gomokuP5, $('#gomoku-canvas')).observe($('#gomoku-canvas'));
+    // 视口节能
+    const toggleLoop=(inst,el,on)=>{ if(!inst) return; on?inst.loop():inst.noLoop(); };
+    const mkIO=(inst,el)=> new IntersectionObserver(([entry])=>toggleLoop(inst,el,entry.isIntersecting),{threshold:.15});
+    mkIO(snakeP5,$('#snake-canvas')).observe($('#snake-canvas'));
+    mkIO(gomokuP5,$('#gomoku-canvas')).observe($('#gomoku-canvas'));
     document.addEventListener('visibilitychange',()=>{ const on=!document.hidden; toggleLoop(snakeP5,$('#snake-canvas'),on); toggleLoop(gomokuP5,$('#gomoku-canvas'),on); });
-  })();
+  });
   </script>
 
-  <noscript>
-    本站的缩略图与部分动画需要 JavaScript 才能呈现；请启用 JavaScript 以获得完整体验。
-  </noscript>
+  <noscript>本站的缩略图与部分动画需要 JavaScript；请启用以获得完整体验。</noscript>
 </body>
 </html>
