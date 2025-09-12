@@ -1,3 +1,7 @@
+/* =========================
+   Snake.js — theme-aware, high-contrast & readable text
+   ========================= */
+
 const GRID_SIZE = 20;
 const TILE_SIZE = 20;
 const FPS_RENDER = 120;
@@ -5,26 +9,42 @@ let movesPerSec = 5;
 let MOVE_INTERVAL = 1000 / movesPerSec;
 
 const SPEED_INCREASE_PER_TWO_SCORES = 0.4;
+const SPEED_BOOST_DURATION = 5000;
+const FLASH_DURATION = 300;
+const SHRINK_EFFECT_DURATION = 500;
 
-const CANVAS_BG = 255;
-const BORDER_COLOR = '#dddddd';
-const GRAD_START = '#007aff';
-const GRAD_END = '#d0e6ff';
-const FOOD_COLOR = '#FF5C00';
+/* 与 body.dark-theme 同步的主题颜色 */
+function themeColors(){
+  const dark = document.body.classList.contains('dark-theme');
+  return {
+    // 画布背景（暗色时用暖黄基调，但足够暗，避免与文本抢对比）
+    CANVAS_BG: dark ? 0x1a0f00 : 255,
+    // 网格与边框
+    BORDER_COLOR: dark ? 'rgba(255,210,138,0.35)' : '#dddddd',
+    // 蛇身渐变（头→尾）
+    GRAD_START: dark ? '#ff7a00' : '#007aff',
+    GRAD_END:   dark ? '#ffd28a' : '#d0e6ff',
+    // 食物颜色（暗色下用青色，和橙色蛇身对比强）
+    FOOD_COLOR: dark ? '#00e0ff' : '#FF5C00',
+    // 道具颜色
+    SPEED_DOT_COLOR: dark ? '#ff7a00' : '#007aff',
+    SHRINK_COLOR:     dark ? '#ff7a00' : '#007aff',
+    // 食物描边与柔光
+    FOOD_STROKE: dark ? 'rgba(10,26,34,0.95)' : 'rgba(255,255,255,0.95)',
+    FOOD_GLOW:   dark ? 'rgba(0,224,255,0.55)' : 'rgba(255,92,0,0.35)',
+    // 文本颜色（关键：暗色/黄底下用很深的黑灰）
+    TEXT: dark ? '#111111' : '#000000'
+  };
+}
 
 let flashStartTime = null;
 let flashIsShrinkDot = false;
-const FLASH_DURATION = 300;
 
 let shrinkDot = null;
-const SHRINK_COLOR = '#007aff';
 let speedDot = null;
-const SPEED_DOT_COLOR = '#007aff'; // Changed to blue
-const SPEED_BOOST_DURATION = 5000;
 let speedBoostEndTime = null;
 
 let shrinkEffectStart = null;
-const SHRINK_EFFECT_DURATION = 500;
 
 let snake = [];
 let prevSnake = [];
@@ -47,6 +67,7 @@ function setup() {
   frameRate(FPS_RENDER);
   colorMode(RGB, 255);
 
+  // 轻样式
   cnv.elt.style.borderRadius = '16px';
   cnv.elt.style.boxShadow = '0 8px 30px rgba(0,0,0,0.08)';
   cnv.elt.style.border = '1px solid #ddd';
@@ -79,16 +100,20 @@ function startFreshGame() {
 }
 
 function updateHUD() {
-  document.getElementById('score').innerText = score;
-  document.getElementById('high-score').innerText = highScore;
+  const elScore = document.getElementById('score');
+  const elHigh = document.getElementById('high-score');
+  if (elScore) elScore.innerText = score;
+  if (elHigh)  elHigh.innerText  = highScore;
 }
 
 function drawGridAndBorder(now) {
-  background(CANVAS_BG);
+  const C = themeColors();
+
+  background(C.CANVAS_BG);
   strokeWeight(2);
   for (let y = 0; y < GRID_SIZE; y++) {
     for (let x = 0; x < GRID_SIZE; x++) {
-      stroke(BORDER_COLOR);
+      stroke(C.BORDER_COLOR);
       noFill();
       rect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
     }
@@ -107,14 +132,15 @@ function drawGridAndBorder(now) {
       colorMode(HSB, 360, 100, 100);
       const hue = ((now / 1000) * 360) % 360;
       flashColor = color(hue, 100, 100);
-      flashColor = lerpColor(flashColor, color(BORDER_COLOR), t);
+      flashColor = lerpColor(flashColor, color(C.BORDER_COLOR), t);
       pop();
     } else {
-      flashColor = lerpColor(color(FOOD_COLOR), color(BORDER_COLOR), t); // Changed to FOOD_COLOR
+      // 食物闪烁过渡用当前主题的食物色
+      flashColor = lerpColor(color(C.FOOD_COLOR), color(C.BORDER_COLOR), t);
     }
     stroke(flashColor);
   } else {
-    stroke(BORDER_COLOR);
+    stroke(C.BORDER_COLOR);
   }
 
   strokeWeight(4);
@@ -123,6 +149,7 @@ function drawGridAndBorder(now) {
 }
 
 function createParticles(gridX, gridY, count, isRainbow) {
+  const C = themeColors();
   for (let i = 0; i < count; i++) {
     let c;
     if (isRainbow) {
@@ -130,7 +157,7 @@ function createParticles(gridX, gridY, count, isRainbow) {
       c = color(random(360), 100, 100);
       colorMode(RGB, 255);
     } else {
-      c = color(FOOD_COLOR);
+      c = color(C.FOOD_COLOR);
     }
     let life = random(30, 60);
     particles.push({
@@ -147,6 +174,7 @@ function createParticles(gridX, gridY, count, isRainbow) {
 
 function draw() {
   const now = millis();
+  const C = themeColors();
 
   if (speedBoostEndTime && now > speedBoostEndTime) {
     setSnakeSpeed(min(movesPerSec - 2, 9));
@@ -157,16 +185,37 @@ function draw() {
 
   if (!gameStarted) {
     textSize(18);
-    fill('#000');
+    fill(C.TEXT);
     textAlign(CENTER, CENTER);
     text('Press Any Key To Start', width / 2, height / 2);
     return;
   }
 
-  noStroke();
-  fill(FOOD_COLOR);
-  ellipse(food.x * TILE_SIZE + TILE_SIZE / 2, food.y * TILE_SIZE + TILE_SIZE / 2, TILE_SIZE * 0.6);
+  // ===== 食物：高对比 + 柔光 + 描边 =====
+  {
+    const cx = food.x * TILE_SIZE + TILE_SIZE / 2;
+    const cy = food.y * TILE_SIZE + TILE_SIZE / 2;
+    const r  = TILE_SIZE * 0.6;
 
+    // 柔光（两层）
+    noStroke();
+    for (let i = 2; i >= 1; i--) {
+      const rr = r + i * 6;
+      const alpha = i === 2 ? 0.20 : 0.35;
+      const glow = color(C.FOOD_GLOW);
+      glow.setAlpha(255 * alpha);
+      fill(glow);
+      ellipse(cx, cy, rr);
+    }
+
+    // 实体 + 描边
+    stroke(C.FOOD_STROKE);
+    strokeWeight(2);
+    fill(C.FOOD_COLOR);
+    ellipse(cx, cy, r);
+  }
+
+  // 缩小道具（彩色呼吸光）
   if (shrinkDot) {
     noStroke();
     colorMode(HSB, 360, 100, 100, 100);
@@ -194,9 +243,10 @@ function draw() {
     colorMode(RGB, 255);
   }
 
+  // 加速道具
   if (speedDot) {
     noStroke();
-    fill(SPEED_DOT_COLOR);
+    fill(C.SPEED_DOT_COLOR);
     ellipse(
       speedDot.x * TILE_SIZE + TILE_SIZE / 2,
       speedDot.y * TILE_SIZE + TILE_SIZE / 2,
@@ -204,8 +254,9 @@ function draw() {
     );
   }
 
-  const colStart = color(GRAD_START);
-  const colEnd = color(GRAD_END);
+  // 蛇身（渐变）
+  const colStart = color(C.GRAD_START);
+  const colEnd   = color(C.GRAD_END);
   for (let i = 0; i < snake.length; i++) {
     const cur = snake[i];
     const prev = prevSnake[i] || cur;
@@ -254,6 +305,7 @@ function draw() {
     }
   }
 
+  // 粒子
   for (let i = particles.length - 1; i >= 0; i--) {
     let p = particles[i];
     let alpha = map(p.life, 0, p.maxLife, 0, 200);
@@ -271,9 +323,12 @@ function draw() {
     }
   }
 
+  // 飘字（使用主题文本色，并带透明）
   scoreAnimations.forEach((anim, i) => {
     let alpha = map(anim.life, 0, anim.maxLife, 0, 255);
-    fill(0, 0, 0, alpha);
+    let tc = color(C.TEXT);
+    tc.setAlpha(alpha);
+    fill(tc);
     textSize(14);
     textAlign(CENTER, CENTER);
     text(anim.text, anim.x, anim.y - anim.life * 0.5);
@@ -287,14 +342,14 @@ function draw() {
 
   if (paused) {
     textSize(18);
-    fill('#000');
+    fill(C.TEXT);
     textAlign(CENTER, CENTER);
     text('Paused\nPress Space To Resume', width / 2, height / 2);
   }
 
   if (gameOver) {
     textSize(18);
-    fill('#000');
+    fill(C.TEXT);
     textAlign(CENTER, CENTER);
     text('Game Over\nPress Any Key To Restart', width / 2, height / 2);
     noLoop();
@@ -302,9 +357,8 @@ function draw() {
 
   if (paused) return;
 
+  // 逻辑步进
   const elapsed = now - lastMoveMs;
-  let progress = constrain(elapsed / MOVE_INTERVAL, 0, 1);
-
   if (!gameOver && elapsed >= MOVE_INTERVAL) {
     prevSnake = snake.map(s => ({ ...s }));
     const head = { x: snake[0].x + direction.x, y: snake[0].y + direction.y };
@@ -323,7 +377,7 @@ function draw() {
           localStorage.setItem('snakeHighScore', highScore);
         }
         updateHUD();
-        
+
         createParticles(head.x, head.y, 10, false);
         scoreAnimations.push({
           x: head.x * TILE_SIZE + TILE_SIZE / 2,
@@ -354,7 +408,7 @@ function draw() {
             const tail1 = { ...snake[snake.length - 1] };
             const tail2 = { ...snake[snake.length - 2] };
             snake.splice(-2, 2);
-            score = max(0, score - 2); // Decrease score by 2, not below 0
+            score = max(0, score - 2);
             updateHUD();
             shrinkEffectStart = now;
             flashStartTime = now;
@@ -376,7 +430,7 @@ function draw() {
         if (speedDot && head.x === speedDot.x && head.y === speedDot.y) {
           setSnakeSpeed(movesPerSec + 2);
           speedBoostEndTime = now + SPEED_BOOST_DURATION;
-          flashStartTime = now; // Trigger orange flash
+          flashStartTime = now;
           flashIsShrinkDot = false;
           createParticles(head.x, head.y, 10, false);
           scoreAnimations.push({
@@ -410,9 +464,9 @@ function keyPressed() {
     if (!paused) loop();
     return;
   }
- 
+
   const { x, y } = direction;
- 
+
   if ((keyCode === LEFT_ARROW || key === 'a' || key === 'A') && x !== 1) direction = { x: -1, y: 0 };
   if ((keyCode === RIGHT_ARROW || key === 'd' || key === 'D') && x !== -1) direction = { x: 1, y: 0 };
   if ((keyCode === UP_ARROW || key === 'w' || key === 'W') && y !== 1) direction = { x: 0, y: -1 };
@@ -433,7 +487,7 @@ function spawnSpecialDot(type) {
     snake.some(s => s.x === dot.x && s.y === dot.y) ||
     (food && food.x === dot.x && food.y === dot.y) ||
     (type === 'shrink' && speedDot && speedDot.x === dot.x && speedDot.y === dot.y) ||
-    (type === 'speed' && shrinkDot && shrinkDot.x === dot.x && shrinkDot.y === dot.y)
+    (type === 'speed'  && shrinkDot && shrinkDot.x === dot.x && shrinkDot.y === dot.y)
   );
   return dot;
 }
