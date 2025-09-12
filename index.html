@@ -150,6 +150,9 @@
     .game-grid{
       display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
       gap:26px;
+
+      /* ✅ 新增：当只剩 1 张卡片时，让它在轨道里居中而不是拉满 */
+      justify-items: center;
     }
     .game-card{
       position:relative; padding:18px; border-radius:var(--rad-xl); background:var(--card-bg);
@@ -157,6 +160,10 @@
       transition:transform .35s ease, box-shadow .35s ease, opacity .6s ease-out;
       opacity:0; transform:translateY(24px);
       outline:none;
+
+      /* ✅ 新增：限制卡片最大宽度，避免被 1fr 拖得太宽 */
+      width: 100%;
+      max-width: 520px; /* 可按需调整 480/560 */
     }
     .game-card.visible{opacity:1; transform:translateY(0)}
     .game-card:hover{transform:translateY(-10px); box-shadow:var(--card-shadow-hover)}
@@ -385,12 +392,11 @@
     // ============ 主题查询 ============
     const currentTheme=()=>document.body.classList.contains('dark-theme')?'dark':'light';
 
-    // ============ Snake 缩略图（固定苹果 + 渐变方块 + 闭环路径） ============
+    // ============ Snake 缩略图 ============
     const snakeSketch = (p) => {
       const TILE = 20, W = 320, H = 320;
       const COLS = (W / TILE) | 0, ROWS = (H / TILE) | 0;
 
-      // 路径：小范围 1~6 的蛇形路线 + 收尾回到起点边（闭环）
       const X0 = 1, X1 = 6, Y0 = 1, Y1 = 6;
       function makeRoute() {
         const r = [];
@@ -417,7 +423,6 @@
       let lastMillis = 0;
       let eatPulse = 0;
 
-      // 固定苹果：路径区域内的随机格点；被吃后再刷新
       let apple = randApple();
       function randApple() {
         for (let k = 0; k < 20; k++) {
@@ -484,7 +489,7 @@
         const g = gridHead();
         if (g.x === apple.x && g.y === apple.y) {
           eatPulse = 1;
-          length = Math.min(16, length + 1); // 控制长度上限，避免缩略图过密
+          length = Math.min(16, length + 1);
           apple = randApple();
         }
         if (eatPulse > 0) eatPulse++;
@@ -492,7 +497,6 @@
       }
 
       function stepHead(dt) {
-        // 轻微速度起伏（视觉顺滑，不改变设计）
         const speed = SPEED_BASE * (1.0 + 0.06 * Math.sin(uHead * 0.6));
         uHead += speed * dt;
       }
