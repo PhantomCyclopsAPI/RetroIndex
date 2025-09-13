@@ -1,111 +1,170 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
   <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-  <meta name="description" content="Play Gomoku (Connect 5). Smart AI with clean visuals and smooth animations."/>
-  <title>Gomoku · Connect 5</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="description" content="Gomoku · 五子棋 · 极简渐变、顺滑动画、支持深浅色主题"/>
+  <title>Gomoku</title>
+
   <link href="https://fonts.googleapis.com/css2?family=Exo:wght@700&family=Montserrat:wght@400;500;700&display=swap" rel="stylesheet">
+
   <style>
-    /* ========= 基础变量（与首页一致的色系） ========= */
     :root{
-      --cell: 34px;
+      /* 全站主题变量（与 Snake 一致） */
+      --bg-0:#0f1c24; --bg-1:#324450; --tx-0:#d8e9f0; --tx-1:#b8c7d6;
+      --pri-0:#00e0ff; --pri-1:#9caedb;
+      --card-bg:rgba(10,20,28,.55);
+      --card-shadow:0 12px 32px rgba(0,224,255,.14);
+      --card-shadow-hover:0 16px 48px rgba(0,224,255,.22);
+      --focus:0 0 0 3px rgba(0,224,255,.35);
+      --rad-xl:24px; --rad-lg:16px;
+
+      /* 棋盘变量（JS 读取 --pad） */
+      --cell: clamp(26px, 3.2vw, 36px);
       --pad: 14px;
-      --line: rgba(0,0,0,.18);   /* 网格线（浅色主题下） */
-      --accentA:#007bff;         /* 顶部按钮左侧色（浅） */
-      --accentB:#00d4ff;         /* 顶部按钮右侧色（浅） */
-      --text:#212529;
-      --muted:#6c757d;
-      --card:#ffffff;
-      --bg-grad-1:#e0f7fa;  /* 浅色背景渐变 */
-      --bg-grad-2:#ffffff;
+      --line: rgba(255,255,255,.18);
+
+      /* 浅色主题黑棋描边强度（可按需调） */
+      --black-ring-alpha:.50;
+      --black-ring-glow:.22;
+
+      /* 居中所用导航高度（JS 会覆盖成真实值） */
+      --nav-h:72px;
     }
-    *{box-sizing:border-box;font-family:'Montserrat',sans-serif}
+    body.dark-theme{
+      --bg-0:#2a1400; --bg-1:#b64b00; --tx-0:#fff2e2; --tx-1:#ffe3c7;
+      --pri-0:#ff7a00; --pri-1:#ffd28a;
+      --card-bg:rgba(56,24,0,.55);
+      --card-shadow:0 12px 32px rgba(255,122,0,.20);
+      --card-shadow-hover:0 16px 48px rgba(255,122,0,.30);
+      --focus:0 0 0 3px rgba(255,122,0,.4);
+      --line: rgba(255,255,255,.22);
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%}
     body{
-      margin:0;
-      background:linear-gradient(180deg,var(--bg-grad-1) 0%,var(--bg-grad-2) 100%);
-      color:var(--text);
-      transition: background .5s ease, color .5s ease;
+      margin:0; font-family:'Montserrat',system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+      color:var(--tx-0);
+      background:linear-gradient(180deg,var(--bg-0) 0%,var(--bg-1) 100%);
+      overflow-x:hidden; transition:background .45s ease,color .45s ease; animation:fadeIn 1s ease both;
+      -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
     }
+    @keyframes fadeIn{from{opacity:.0}to{opacity:1}}
+    a{color:inherit; text-decoration:none}
+    button{font:inherit; cursor:pointer}
 
-    /* ========= 导航（与首页 index.html 风格一致） ========= */
+    /* 顶栏（Home / Snake / Gomoku） */
     nav{
-      background:transparent;
-      position:sticky;top:0;z-index:100;
-      padding:20px;display:flex;justify-content:center;align-items:center;
-      box-shadow:none;transition:background .3s ease, padding .3s ease;
+      position:sticky; top:0; z-index:100; display:flex; gap:20px; justify-content:center; align-items:center;
+      padding:16px 20px; transition:all .3s ease; background:transparent;
     }
-    nav.scrolled{
-      background:rgba(255,255,255,.8);
-      backdrop-filter:blur(10px);
-      padding:10px 20px;
-    }
-    nav ul{display:flex;list-style:none;gap:32px}
-    nav a{
-      color:inherit;text-decoration:none;font-size:16px;font-weight:500;position:relative;transition:color .3s ease;
-    }
-    nav a::after{
-      content:'';position:absolute;bottom:-4px;left:0;width:0;height:2px;
-      background:linear-gradient(90deg,var(--accentA),var(--accentB));transition:width .3s ease;
-    }
-    nav a:hover::after{width:100%}
+    nav.scrolled{background:rgba(0,0,0,.25); backdrop-filter:blur(10px); padding:10px 20px}
+    nav ul{display:flex; list-style:none; gap:24px; padding:0; margin:0}
+    nav a{position:relative; font-weight:600; opacity:.95}
+    nav a::after{content:''; position:absolute; left:0; bottom:-6px; height:2px; width:0;
+      background:linear-gradient(90deg,var(--pri-0),var(--pri-1)); transition:width .25s ease;}
+    nav a:hover::after, nav a[aria-current="page"]::after{width:100%}
     #theme-toggle{
-      background:linear-gradient(135deg,var(--accentA),var(--accentB));
-      color:#fff;border:none;padding:8px 16px;border-radius:50px;cursor:pointer;font-size:14px;margin-left:32px;
-      transition:transform .3s ease, box-shadow .3s ease;
+      background:linear-gradient(135deg,var(--pri-0),var(--pri-1)); color:#0a1a22; border:none; border-radius:999px;
+      padding:8px 14px; font-weight:700; transition:transform .25s ease, box-shadow .25s ease;
     }
-    #theme-toggle:hover{ transform:scale(1.05); box-shadow:0 4px 12px rgba(0,123,255,.3) }
+    #theme-toggle:hover{transform:translateY(-1px); box-shadow:0 8px 18px rgba(0,0,0,.25)}
+    #theme-toggle:focus-visible{outline:none; box-shadow:var(--focus)}
 
-    /* ========= 页面标题与操作区 ========= */
-    .hero{
-      text-align:center;padding:40px 20px;margin-bottom:10px;
+    /* ===== CSS 垂直居中：标题+卡片整体在首屏居中 ===== */
+    main{
+      min-height: calc(100svh - var(--nav-h));
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
     }
+
+    /* 标题区 */
+    .hero{text-align:center; padding:40px 20px 26px;}
     .hero h1{
-      font:700 38px/1.2 'Exo',sans-serif;margin:0 0 10px;
-      background:linear-gradient(90deg,var(--accentA),var(--accentB));
-      -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+      margin:0 0 8px; font-size:40px; font-weight:800; font-family:'Exo',sans-serif;
+      background:linear-gradient(90deg,var(--pri-0),var(--pri-1));
+      -webkit-background-clip:text; -webkit-text-fill-color:transparent;
     }
-    .hero p{opacity:.8;margin:0}
+    .hero p{margin:0 auto; max-width:560px; color:var(--tx-1)}
 
-    .controls-bar{
-      max-width:980px;margin:0 auto 16px;padding:0 16px;
-      display:flex;gap:10px;justify-content:center;align-items:center;flex-wrap:wrap;
+    /* 内容卡片布局（与 Snake 相同风格） */
+    .game-grid{width:min(1100px,92vw); margin:0 auto; padding:32px 20px}
+    .game-card{
+      background:var(--card-bg); border-radius:var(--rad-xl); box-shadow:var(--card-shadow);
+      padding:18px; text-align:center; transition:transform .35s ease, box-shadow .35s ease, opacity .6s ease-out;
+      opacity:0; transform:translateY(24px); border:none; margin:0 auto; max-width:820px;
     }
+    .game-card.visible{opacity:1; transform:translateY(0)}
+    .game-card:hover{transform:translateY(-10px); box-shadow:var(--card-shadow-hover)}
+
+    /* HUD 与按钮 */
+    #hud{margin-bottom:12px; font-size:16px; font-weight:600; color:var(--tx-0)}
+    #hud span{margin:0 12px}
+    .buttons{ display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-bottom:8px }
+    .pill, .select{ border-radius:999px; padding:8px 14px; font-weight:700; border:none; }
     .pill{
-      background:linear-gradient(135deg,var(--accentA),var(--accentB));
-      color:#fff;border:none;padding:8px 16px;border-radius:50px;cursor:pointer;
-      font-size:14px;font-weight:600;transition:transform .3s ease, box-shadow .3s ease;
+      background:linear-gradient(135deg,var(--pri-0),var(--pri-1)); color:#0a1a22;
+      transition:transform .25s ease, box-shadow .25s ease;
     }
-    .pill:hover{ transform:scale(1.05); box-shadow:0 4px 12px rgba(0,123,255,.3) }
-    .select{
-      padding:8px 10px;border-radius:10px;border:1px solid rgba(0,0,0,.08);background:var(--card);
-    }
-    .status{ text-align:center;color:var(--muted);font-weight:700;margin:6px 0 10px }
+    .pill:hover{transform:translateY(-1px); box-shadow:0 8px 18px rgba(0,0,0,.25)}
+    .pill:focus-visible{outline:none; box-shadow:var(--focus)}
+    .select{ background:rgba(255,255,255,.12); color:var(--tx-0); border:1px solid rgba(255,255,255,.18); padding-right:28px; }
 
-    /* ========= 棋盘容器 ========= */
-    #gomoku{ max-width:980px; margin:0 auto 36px; padding:0 16px }
-    .board-wrap{ position:relative; width:fit-content; margin:0 auto }
-    .board{
+    /* 游戏舞台容器 */
+    #gomoku-stage{
+      margin:0 auto 16px; border-radius:var(--rad-lg); overflow:hidden; box-shadow:0 6px 18px rgba(0,0,0,.25);
+      width:100%; max-width:640px; aspect-ratio:1/1; display:flex; align-items:center; justify-content:center;
+      background:rgba(0,0,0,.18); position:relative;
+    }
+
+    /* 棋盘（你的 JS 会 append .cell） */
+    #board{
       position:relative; display:grid; gap:0;
       grid-template-columns:repeat(15,var(--cell));
       grid-template-rows:repeat(15,var(--cell));
       padding:var(--pad); border-radius:16px; isolation:isolate;
-      /* 浅色主题：极简柔灰 */
-      background: linear-gradient(180deg,#fafafa 0%,#f1f1f1 100%);
-      box-shadow: inset 0 8px 20px rgba(0,0,0,.05), 0 10px 22px rgba(0,0,0,.08);
+      width:100%; height:100%;
+      background: linear-gradient(180deg, rgba(255,255,255,.05) 0%, rgba(255,255,255,.02) 100%);
+      box-shadow: inset 0 8px 20px rgba(0,0,0,.15), 0 10px 22px rgba(0,0,0,.08);
     }
-    .board::before{
+    /* 网格线（用 --line，主题联动） */
+    #board::before{
       content:""; position:absolute; inset:var(--pad);
       background-image:
         linear-gradient(to right, var(--line) 1px, transparent 1px),
         linear-gradient(to bottom,var(--line) 1px, transparent 1px);
       background-size:var(--cell) var(--cell), var(--cell) var(--cell);
-      pointer-events:none; border-radius:10px; opacity:.95
+      pointer-events:none; border-radius:10px; opacity:.95;
     }
 
-    /* 单元格/棋子 —— 无鼠标预下影 */
+    /* ========= 浅色（蓝）主题：加深棋盘 + 黑棋蓝描边 ========= */
+    /* 棋盘冷灰蓝加深 & 网格线加深 */
+    body:not(.dark-theme){ --line: rgba(0, 35, 60, .22); }
+    body:not(.dark-theme) #board{
+      background:
+        radial-gradient(120% 100% at 18% 8%, #c5d6e0 0%, #a5b8c6 45%, #8a9cab 100%),
+        repeating-linear-gradient(18deg, rgba(0, 96, 160, .08) 0 3px, rgba(0,0,0,.10) 3px 6px),
+        repeating-linear-gradient(-18deg, rgba(0, 96, 160, .06) 0 4px, rgba(0,0,0,.12) 4px 8px);
+      box-shadow: inset 0 10px 28px rgba(0, 96, 160, .18), 0 12px 30px rgba(0,0,0,.18);
+    }
+    /* 黑棋蓝色描边与柔光（只在浅色） */
+    body:not(.dark-theme) .cell.black::before{
+      box-shadow:
+        inset 0 0 0 1px rgba(255,255,255,.06),
+        0 0 0 2px rgba(0, 224, 255, var(--black-ring-alpha)),
+        0 6px 16px rgba(0, 60, 100, .35),
+        0 0 14px rgba(0, 224, 255, var(--black-ring-glow));
+    }
+    /* 玩家上一步蓝圈更明显 */
+    body:not(.dark-theme) .cell.last-move::after{
+      box-shadow: 0 0 0 6px rgba(0, 224, 255, .35), 0 0 18px 8px rgba(0, 224, 255, .45);
+    }
+
+    /* 棋子外观与动效 */
     .cell{ position:relative; width:var(--cell); height:var(--cell) }
-    .cell:hover::after{ content:none !important; } /* 彻底移除预下影 */
+    .cell:hover::after{ content:none !important; } /* 禁预下影 */
     .cell.black::before, .cell.white::before{
       content:""; position:absolute; inset:4px; border-radius:50%;
       transform:translateY(-10px) scale(.9); opacity:0;
@@ -113,159 +172,178 @@
     }
     .cell.black::before{
       background:radial-gradient(120% 120% at 35% 30%, #5a5a5a 0%, #1e1e1e 45%, #0a0a0a 100%);
-      box-shadow: inset 0 0 0 1px rgba(255,255,255,.05), 0 4px 10px rgba(0,0,0,.38);
     }
     .cell.white::before{
       background:radial-gradient(120% 120% at 35% 30%, #fff 0%, #efefef 50%, #dedede 100%);
       box-shadow: inset 0 0 0 2px rgba(0,0,0,.09), 0 4px 10px rgba(0,0,0,.2);
     }
 
-    /* 玩家/AI 最后一手光效（浅色主题下：玩家蓝、AI 蓝） */
-    .cell.last-move::after{
-      content:"";position:absolute;inset:2px;border-radius:50%;pointer-events:none;
-      box-shadow:0 0 0 5px rgba(0,123,255,.28), 0 0 14px 6px rgba(0,123,255,.35);
-      animation:breath 1.6s ease-in-out infinite; mix-blend-mode:soft-light;
-    }
+    /* AI 上一步呼吸光效（浅色蓝 / 深色橙主题联动写在下面） */
     .cell.ai-last-move::after{
       content:"";position:absolute;inset:0;border-radius:50%;pointer-events:none;
-      /* —— 浅色主题蓝色呼吸，与顶部按钮一致 —— */
       background: radial-gradient(circle at 50% 50%,
-                  rgba(0,123,255,.85) 0 34%,
-                  rgba(0,212,255,.22) 34% 52%,
-                  rgba(0,212,255,0) 52% 100%);
-      box-shadow: 0 0 0 5px rgba(0,123,255,.32),
-                  0 0 18px 8px rgba(0,123,255,.45),
-                  0 0 38px 16px rgba(0,212,255,.28);
+                  rgba(0,224,255,.85) 0 34%,
+                  rgba(156,174,219,.22) 34% 52%,
+                  rgba(156,174,219,0) 52% 100%);
+      box-shadow: 0 0 0 5px rgba(0,224,255,.32),
+                  0 0 18px 8px rgba(0,224,255,.45),
+                  0 0 38px 16px rgba(156,174,219,.28);
       filter:saturate(1.05); mix-blend-mode:screen;
       animation: aiPulse 1.2s ease-in-out infinite, aiFlash 700ms ease-out 1; opacity:.95;
     }
 
-    /* 胜利连线（浅色：蓝） */
+    /* 胜利线 */
     .win-line{ position:absolute; inset:0; pointer-events:none }
     .win-line line{
-      stroke:#0a84ff; stroke-width:5; stroke-linecap:round;
-      filter:drop-shadow(0 0 6px rgba(10,132,255,.55));
+      stroke:#00e0ff; stroke-width:5; stroke-linecap:round;
+      filter:drop-shadow(0 0 6px rgba(0,224,255,.55));
       stroke-dasharray:440; stroke-dashoffset:440; animation:draw 420ms ease-out forwards;
     }
 
-    @keyframes drop{to{transform:translateY(0) scale(1); opacity:1}}
-    @keyframes breath{0%,100%{opacity:.55}50%{opacity:.95}}
-    @keyframes aiPulse{0%{transform:scale(.92);opacity:.85}50%{transform:scale(1.05);opacity:1}100%{transform:scale(.92);opacity:.85}}
-    @keyframes aiFlash{
-      0%{box-shadow:0 0 0 0 rgba(0,123,255,.6), 0 0 0 0 rgba(0,212,255,.35), 0 0 0 0 rgba(0,212,255,.2)}
-      60%{box-shadow:0 0 0 10px rgba(0,123,255,0), 0 0 18px 10px rgba(0,123,255,.35), 0 0 38px 20px rgba(0,212,255,.25)}
-      100%{box-shadow:0 0 0 6px rgba(0,123,255,.32), 0 0 18px 8px rgba(0,123,255,.45), 0 0 38px 16px rgba(0,212,255,.28)}
-    }
-    @keyframes draw{to{stroke-dashoffset:0}}
-
-    /* ========= 深色主题（与首页完全一致的切换语义） ========= */
-    body.dark-theme{
-      --line: rgba(255,255,255,.22);
-      --accentA:#FA4616; --accentB:#fc8003;
-      --text:#ffffff; --card:#121212; --muted:#b0b0b0;
-      --bg-grad-1:#000000; --bg-grad-2:#000000;
-      background:#000; color:#fff;
-    }
-    body.dark-theme nav.scrolled{
-      background:rgba(0,0,0,.8);
-      backdrop-filter:blur(10px);
-    }
-    body.dark-theme nav a::after{
-      background:linear-gradient(90deg,#FA4616,#fc8003);
-      box-shadow:0 0 5px #FA4616;
-    }
-    body.dark-theme #theme-toggle{
-      background:linear-gradient(135deg,#FA4616,#fc8003);
-      box-shadow:0 0 8px #FA4616;
-    }
-    body.dark-theme #theme-toggle:hover{ box-shadow:0 0 12px #FA4616 }
-
-    /* 深色主题下：棋盘为暗金木纹，黑棋加金色描边更显眼；AI 光效橘色；胜利线橘色 */
-    body.dark-theme .board{
+    /* 深色主题：暗金木纹 + 黑棋金描边 + 橙色胜利线 */
+    body.dark-theme #board{
       background:
         radial-gradient(120% 100% at 18% 8%, #2a2018 0%, #1b1510 45%, #120e0b 100%),
         repeating-linear-gradient(18deg, rgba(212,167,44,.07) 0 3px, rgba(0,0,0,.18) 3px 6px),
         repeating-linear-gradient(-18deg, rgba(212,167,44,.05) 0 4px, rgba(0,0,0,.22) 4px 8px);
       box-shadow: inset 0 10px 30px rgba(212,167,44,.08), 0 12px 30px rgba(0,0,0,.55);
     }
-    /* 黑棋在暗色下更清晰：增加金色描边环与更强高光 */
     body.dark-theme .cell.black::before{
       background:radial-gradient(120% 120% at 35% 30%, #6a6a6a 0%, #242424 45%, #0a0a0a 100%);
       box-shadow:
-        inset 0 0 0 1px rgba(255,255,255,.08),   /* 微内高光 */
-        0 0 0 2px rgba(212,167,44,.45),         /* 金色描边环（关键） */
-        0 6px 16px rgba(0,0,0,.66);             /* 更强立体阴影 */
+        inset 0 0 0 1px rgba(255,255,255,.08),
+        0 0 0 2px rgba(212,167,44,.45),
+        0 6px 16px rgba(0,0,0,.66);
     }
-    /* 白棋稍加对比，避免过亮溢出 */
     body.dark-theme .cell.white::before{
       box-shadow: inset 0 0 0 2px rgba(255,255,255,.10), 0 4px 12px rgba(0,0,0,.55);
     }
-    /* 深色主题：AI 上一步光效 = 橘黄色，与顶部按钮一致 */
     body.dark-theme .cell.ai-last-move::after{
       background: radial-gradient(circle at 50% 50%,
-                  rgba(250,70,22,.88) 0 34%,
-                  rgba(252,128,3,.24) 34% 52%,
-                  rgba(252,128,3,0) 52% 100%);
-      box-shadow: 0 0 0 5px rgba(250,70,22,.35),
-                  0 0 18px 8px rgba(250,70,22,.55),
-                  0 0 38px 16px rgba(252,128,3,.30);
+                  rgba(255,122,0,.88) 0 34%,
+                  rgba(255,210,138,.24) 34% 52%,
+                  rgba(255,210,138,0) 52% 100%);
+      box-shadow: 0 0 0 5px rgba(255,122,0,.35),
+                  0 0 18px 8px rgba(255,122,0,.55),
+                  0 0 38px 16px rgba(255,210,138,.30);
     }
-    /* 深色主题：胜利线橘色 */
     body.dark-theme .win-line line{
-      stroke:#FA4616; filter:drop-shadow(0 0 6px rgba(250,70,22,.6));
+      stroke:#ff7a00; filter:drop-shadow(0 0 6px rgba(255,122,0,.6));
+    }
+
+    @keyframes drop{to{transform:translateY(0) scale(1); opacity:1}}
+    @keyframes aiPulse{0%{transform:scale(.92);opacity:.85}50%{transform:scale(1.05);opacity:1}100%{transform:scale(.92);opacity:.85}}
+    @keyframes aiFlash{
+      0%{box-shadow:0 0 0 0 rgba(0,224,255,.6), 0 0 0 0 rgba(156,174,219,.35), 0 0 0 0 rgba(156,174,219,.2)}
+      60%{box-shadow:0 0 0 10px rgba(0,224,255,0), 0 0 18px 10px rgba(0,224,255,.35), 0 0 38px 20px rgba(156,174,219,.25)}
+      100%{box-shadow:0 0 0 6px rgba(0,224,255,.32), 0 0 18px 8px rgba(0,224,255,.45), 0 0 38px 16px rgba(156,174,219,.28)}
+    }
+    @keyframes draw{to{stroke-dashoffset:0}}
+
+    /* 响应式 */
+    @media (max-width:768px){
+      .hero h1{font-size:32px}
+      nav ul{gap:16px; flex-wrap:wrap; justify-content:center}
+    }
+    @media (prefers-reduced-motion:reduce){
+      *,*:before,*:after{transition:none !important; animation:none !important}
+      .game-card{opacity:1 !important; transform:none !important}
     }
   </style>
 </head>
 <body>
-  <!-- 导航栏（与首页同结构/同样式与按钮 id） -->
-  <nav role="navigation">
+  <!-- 顶栏 -->
+  <nav role="navigation" aria-label="主导航">
     <ul>
       <li><a href="/index.html">Home</a></li>
-      <li><a href="/tetris.html">Tetris</a></li>
       <li><a href="/Games/snake.html">Snake</a></li>
-      <li><a href="/flappy.html">Flappy Bird</a></li>
-      <li><a href="/Games/maze.html">Maze</a></li>
-      <li><a href="/Games/Gomoku.html">Gomoku</a></li>
+      <li><a href="/Games/Gomoku.html" aria-current="page">Gomoku</a></li>
     </ul>
-    <button id="theme-toggle" aria-label="Toggle theme">Toggle Theme</button>
+    <button id="theme-toggle" aria-label="切换主题" aria-pressed="false">切换主题</button>
   </nav>
 
-  <section class="hero">
-    <h1>Gomoku · Connect 5</h1>
-    <p>Connect five in a row. Clean visuals · Smooth animations · Smart AI.</p>
-  </section>
+  <main>
+    <!-- 标题区 -->
+    <section class="hero" role="banner">
+      <h1>Gomoku</h1>
+      <p>极简块状像素与顺滑动画。连接五子即胜，支持难度切换与深浅色主题。</p>
+    </section>
 
-  <div class="controls-bar">
-    <label for="difficulty-select" style="display:none">Difficulty</label>
-    <select id="difficulty-select" class="select" title="Difficulty">
-      <option value="easy">Easy</option>
-      <option value="medium" selected>Medium</option>
-      <option value="hard">Hard</option>
-    </select>
-    <button id="new-game" class="pill">New Game</button>
-  </div>
-  <div class="status"><span id="message">Your turn (Black)</span></div>
+    <div class="game-grid">
+      <div class="game-card">
+        <!-- HUD：JS 使用 #message -->
+        <div id="hud" aria-live="polite">
+          <span id="message">Your turn (Black)</span>
+        </div>
 
-  <section id="gomoku" aria-label="Gomoku">
-    <div class="board-wrap">
-      <svg class="win-line" id="win-svg"></svg>
-      <div id="board" class="board"></div>
+        <!-- 控件：ID 必须匹配 JS -->
+        <div class="buttons" role="group" aria-label="Gomoku 控件">
+          <label for="difficulty-select" class="visually-hidden" style="position:absolute;left:-9999px;">Difficulty</label>
+          <select id="difficulty-select" class="select" title="Difficulty">
+            <option value="easy">Easy</option>
+            <option value="medium" selected>Medium</option>
+            <option value="hard">Hard</option>
+          </select>
+          <button id="new-game" class="pill">新局</button>
+        </div>
+
+        <!-- 游戏舞台：JS 依赖 #gomoku / #board / #win-svg -->
+        <section id="gomoku" aria-label="Gomoku">
+          <div id="gomoku-stage">
+            <svg class="win-line" id="win-svg"></svg>
+            <div id="board" role="grid" aria-label="15×15 五子棋棋盘"></div>
+          </div>
+        </section>
+
+        <h2 style="font:700 22px 'Exo',sans-serif; margin:4px 0 6px">Gomoku</h2>
+        <p style="font-size:14px; color:var(--tx-1); margin:0 0 8px">Connect five in a row. Clean visuals · Smooth animations · Smart AI.</p>
+      </div>
     </div>
-  </section>
+  </main>
 
+  <!-- 你的 AI/逻辑脚本（确认此路径指向你的 Gomoku.js） -->
   <script defer src="/JS_Codes/Gomoku.js"></script>
+
   <script>
-    // —— 与首页一致的主题切换行为 —— //
-    let currentTheme = 'light';
-    document.getElementById('theme-toggle').addEventListener('click', () => {
-      document.body.classList.toggle('dark-theme');
-      currentTheme = document.body.classList.contains('dark-theme') ? 'dark' : 'light';
+    /* 主题持久化 + 按钮逻辑 */
+    const THEME_KEY='retroIndexTheme';
+    const applyTheme=(t)=>{
+      const dark = t==='dark';
+      document.body.classList.toggle('dark-theme', dark);
+      document.getElementById('theme-toggle')?.setAttribute('aria-pressed', String(dark));
+    };
+    (()=>{
+      const saved=localStorage.getItem(THEME_KEY);
+      const prefersDark=window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+      applyTheme(saved || (prefersDark?'dark':'light'));
+    })();
+    document.getElementById('theme-toggle')?.addEventListener('click',()=>{
+      const dark=!document.body.classList.contains('dark-theme');
+      applyTheme(dark?'dark':'light');
+      localStorage.setItem(THEME_KEY, dark?'dark':'light');
     });
-    // 导航滚动效果（与首页一致）
-    window.addEventListener('scroll', () => {
-      const nav = document.querySelector('nav');
-      if (window.scrollY > 100) nav.classList.add('scrolled'); else nav.classList.remove('scrolled');
+
+    /* 滚动吸顶（与 Snake 一致） */
+    let ticking=false;
+    window.addEventListener('scroll',()=>{
+      if(!ticking){
+        requestAnimationFrame(()=>{
+          const nav=document.querySelector('nav');
+          if(window.scrollY>100) nav?.classList.add('scrolled'); else nav?.classList.remove('scrolled');
+          ticking=false;
+        }); ticking=true;
+      }
     });
+
+    /* 卡片出现动画 */
+    const io=new IntersectionObserver(es=>{
+      es.forEach(e=>{ if(e.isIntersecting){ e.target.classList.add('visible'); io.unobserve(e.target);} });
+    },{threshold:.2});
+    document.querySelectorAll('.game-card').forEach(c=>io.observe(c));
+
+    /* 用真实导航高度校准首屏居中（更精准） */
+    const navH = document.querySelector('nav')?.offsetHeight || 72;
+    document.documentElement.style.setProperty('--nav-h', navH + 'px');
   </script>
 </body>
 </html>
