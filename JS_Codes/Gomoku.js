@@ -1,8 +1,3 @@
-// =========================
-// Gomoku (Connect Five) - FAST-Hard AI + Clean UI
-// 全页主题由 #theme-toggle 切换 body.dark-theme 控制（与首页一致）
-// =========================
-
 const boardSize = 15;
 const WIN_LENGTH = 5;
 
